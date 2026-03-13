@@ -54,7 +54,7 @@
       <div id="dashboard-view" class="view">
         <div class="stats-cards">
           <div class="stat-card">
-            <h3>总资产</h3>
+            <h3>净资产</h3>
             <p id="total-assets">¥0.00</p>
           </div>
           <div class="stat-card">
@@ -62,8 +62,27 @@
             <p id="assets-count">0</p>
           </div>
         </div>
+        
+        <!-- 饼图区域 -->
+        <div class="charts-section">
+          <div class="chart-card">
+            <h3>资产配置</h3>
+            <div class="pie-chart-container">
+              <svg id="category-pie" class="pie-chart" viewBox="0 0 100 100"></svg>
+              <div id="category-legend" class="chart-legend"></div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3 id="subtype-title">固收明细</h3>
+            <div class="pie-chart-container">
+              <svg id="subtype-pie" class="pie-chart" viewBox="0 0 100 100"></svg>
+              <div id="subtype-legend" class="chart-legend"></div>
+            </div>
+          </div>
+        </div>
+        
         <div class="recent-assets">
-          <h3>最近资产</h3>
+          <h3>资产详情</h3>
           <div id="recent-list"></div>
         </div>
       </div>
@@ -97,14 +116,19 @@
             </div>
             <div class="form-group">
               <label>资产类型</label>
-              <select id="asset-type" required>
+              <select id="asset-category" required>
+                <option value="">请选择类型</option>
                 <option value="现金">现金</option>
-                <option value="银行存款">银行存款</option>
-                <option value="股票">股票</option>
-                <option value="基金">基金</option>
-                <option value="房产">房产</option>
-                <option value="车辆">车辆</option>
-                <option value="其他">其他</option>
+                <option value="固收">固收</option>
+                <option value="权益">权益</option>
+                <option value="另类">另类</option>
+                <option value="负债">负债</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>资产子类</label>
+              <select id="asset-type" required>
+                <option value="">请先选择类型</option>
               </select>
             </div>
             <div class="form-group">

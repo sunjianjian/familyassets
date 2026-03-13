@@ -1,6 +1,33 @@
 // API 配置
 const API_BASE = '/api';
 
+// 资产分类配置
+const ASSET_CATEGORIES = {
+  '现金': ['活期存款', '货币基金', '其他'],
+  '固收': ['定期存款', '银行理财', '住房公积金', '养老个人账户', '医保个人账户', 'P2P', '其他'],
+  '权益': ['股票', '基金', '其他'],
+  '另类': ['期权', '其他'],
+  '负债': ['信用卡', '花呗', '其他']
+};
+
+// 分类颜色
+const CATEGORY_COLORS = {
+  '现金': '#22c55e',
+  '固收': '#3b82f6',
+  '权益': '#f59e0b',
+  '另类': '#a855f7',
+  '负债': '#ef4444'
+};
+
+// 子类颜色（渐变色调）
+const SUBTYPE_COLORS = [
+  '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a', '#172554'
+];
+
+// 当前选中的分类
+let selectedCategory = '固收';
+let allAssets = [];
+
 // 状态管理
 let token = localStorage.getItem('token');
 let currentUser = localStorage.getItem('username');
@@ -88,11 +115,11 @@ function initEventListeners() {
       
       if (!res.ok) throw new Error(data.error);
       
-      authError.style.color = '#27ae60';
+      authError.style.color = '#22c55e';
       authError.textContent = '注册成功，请登录';
       document.querySelector('[data-tab="login"]').click();
     } catch (err) {
-      authError.style.color = '#e74c3c';
+      authError.style.color = '#ef4444';
       authError.textContent = err.message;
     }
   });
@@ -124,6 +151,23 @@ function initEventListeners() {
     });
   });
 
+  // 资产类型联动
+  document.getElementById('asset-category').addEventListener('change', (e) => {
+    const category = e.target.value;
+    const typeSelect = document.getElementById('asset-type');
+    
+    typeSelect.innerHTML = '<option value="">请选择子类</option>';
+    
+    if (category && ASSET_CATEGORIES[category]) {
+      ASSET_CATEGORIES[category].forEach(subtype => {
+        const option = document.createElement('option');
+        option.value = subtype;
+        option.textContent = subtype;
+        typeSelect.appendChild(option);
+      });
+    }
+  });
+
   // 添加资产按钮
   document.getElementById('add-asset-btn').addEventListener('click', () => {
     openAssetModal();
@@ -138,9 +182,13 @@ function initEventListeners() {
   document.getElementById('asset-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('asset-id').value;
+    const category = document.getElementById('asset-category').value;
+    const type = document.getElementById('asset-type').value;
+    
     const data = {
       name: document.getElementById('asset-name').value,
-      type: document.getElementById('asset-type').value,
+      category: category,
+      type: type,
       amount: parseFloat(document.getElementById('asset-amount').value),
       description: document.getElementById('asset-description').value
     };
@@ -165,6 +213,7 @@ function initEventListeners() {
       
       closeAssetModal();
       loadAssets();
+      loadDashboard();
     } catch (err) {
       alert(err.message);
     }
@@ -193,27 +242,257 @@ async function loadDashboard() {
     
     const stats = await statsRes.json();
     const assets = await assetsRes.json();
+    allAssets = assets;
     
-    document.getElementById('total-assets').textContent = `¥${formatNumber(stats.total)}`;
+    // 计算净资产（资产 - 负债）
+    const totalAssets = assets.filter(a => a.category !== '负债').reduce((sum, a) => sum + a.amount, 0);
+    const totalLiabilities = assets.filter(a => a.category === '负债').reduce((sum, a) => sum + a.amount, 0);
+    const netWorth = totalAssets - totalLiabilities;
+    
+    document.getElementById('total-assets').textContent = `¥${formatNumber(netWorth)}`;
     document.getElementById('assets-count').textContent = stats.count;
     
+    // 渲染饼图
+    renderCategoryPieChart(assets);
+    renderSubtypePieChart(assets, selectedCategory);
+    
+    // 按分类顺序排序资产
+    const categoryOrder = ['现金', '固收', '权益', '另类', '负债'];
+    const sortedAssets = [...assets].sort((a, b) => {
+      const orderA = categoryOrder.indexOf(a.category);
+      const orderB = categoryOrder.indexOf(b.category);
+      if (orderA !== orderB) return orderA - orderB;
+      return b.amount - a.amount; // 同类内按金额降序
+    });
+    
     const recentList = document.getElementById('recent-list');
-    if (assets.length === 0) {
+    if (sortedAssets.length === 0) {
       recentList.innerHTML = '<div class="empty-message">暂无资产记录</div>';
     } else {
-      recentList.innerHTML = assets.slice(0, 5).map(asset => `
-        <div class="asset-item">
-          <div class="asset-info">
-            <h4>${escapeHtml(asset.name)}</h4>
-            <span>${asset.type}</span>
+      recentList.innerHTML = sortedAssets.map(asset => {
+        const color = CATEGORY_COLORS[asset.category] || '#6366f1';
+        const isLiability = asset.category === '负债';
+        return `
+          <div class="asset-item">
+            <div class="asset-info">
+              <h4>${escapeHtml(asset.name)}</h4>
+              <span style="color: ${color}">${asset.category} · ${asset.type}</span>
+            </div>
+            <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
+              ${isLiability ? '-' : ''}¥${formatNumber(asset.amount)}
+            </div>
           </div>
-          <div class="asset-amount">¥${formatNumber(asset.amount)}</div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
   } catch (err) {
     console.error('加载概览失败:', err);
   }
+}
+
+// 渲染一级资产饼图
+function renderCategoryPieChart(assets) {
+  const svg = document.getElementById('category-pie');
+  const legend = document.getElementById('category-legend');
+  
+  // 按大类统计
+  const categoryStats = {};
+  assets.forEach(asset => {
+    const cat = asset.category || '其他';
+    if (!categoryStats[cat]) {
+      categoryStats[cat] = 0;
+    }
+    categoryStats[cat] += Math.abs(asset.amount);
+  });
+  
+  const categories = Object.keys(categoryStats);
+  const total = Object.values(categoryStats).reduce((a, b) => a + b, 0);
+  
+  if (total === 0) {
+    svg.innerHTML = `
+      <circle cx="50" cy="50" r="40" fill="var(--bg-secondary)" />
+      <text x="50" y="50" class="pie-center-text" transform="rotate(90 50 50)">暂无数据</text>
+    `;
+    legend.innerHTML = '';
+    return;
+  }
+  
+  let paths = '';
+  let currentAngle = 0;
+  
+  categories.forEach((category, index) => {
+    const value = categoryStats[category];
+    const percentage = value / total;
+    const angle = percentage * 360;
+    const color = CATEGORY_COLORS[category] || '#6366f1';
+    
+    // 计算扇形路径
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + angle;
+    const largeArc = angle > 180 ? 1 : 0;
+    
+    const x1 = 50 + 40 * Math.cos(startAngle * Math.PI / 180);
+    const y1 = 50 + 40 * Math.sin(startAngle * Math.PI / 180);
+    const x2 = 50 + 40 * Math.cos(endAngle * Math.PI / 180);
+    const y2 = 50 + 40 * Math.sin(endAngle * Math.PI / 180);
+    
+    const isActive = category === selectedCategory;
+    
+    if (percentage > 0.001) {
+      paths += `
+        <path 
+          class="pie-slice ${isActive ? 'active' : ''}" 
+          d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
+          fill="${color}"
+          data-category="${category}"
+          onclick="selectCategory('${category}')"
+          style="color: ${color}"
+        />
+      `;
+    }
+    
+    currentAngle += angle;
+  });
+  
+  // 中心圆
+  paths += `<circle cx="50" cy="50" r="25" fill="var(--bg-card)" />`;
+  
+  svg.innerHTML = paths;
+  
+  // 渲染图例
+  legend.innerHTML = categories.map(category => {
+    const value = categoryStats[category];
+    const percentage = ((value / total) * 100).toFixed(1);
+    const color = CATEGORY_COLORS[category] || '#6366f1';
+    const isActive = category === selectedCategory;
+    return `
+      <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectCategory('${category}')">
+        <span class="legend-dot" style="background: ${color}"></span>
+        <span class="legend-text">${category}</span>
+        <span class="legend-value">${percentage}%</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// 渲染二级资产饼图
+function renderSubtypePieChart(assets, category) {
+  const svg = document.getElementById('subtype-pie');
+  const legend = document.getElementById('subtype-legend');
+  const title = document.getElementById('subtype-title');
+  
+  title.textContent = `${category}明细`;
+  
+  // 筛选该分类下的资产
+  const categoryAssets = assets.filter(a => a.category === category);
+  
+  // 按子类统计
+  const subtypeStats = {};
+  categoryAssets.forEach(asset => {
+    const type = asset.type || '其他';
+    if (!subtypeStats[type]) {
+      subtypeStats[type] = 0;
+    }
+    subtypeStats[type] += Math.abs(asset.amount);
+  });
+  
+  const subtypes = Object.keys(subtypeStats);
+  const total = Object.values(subtypeStats).reduce((a, b) => a + b, 0);
+  
+  if (total === 0) {
+    svg.innerHTML = `
+      <circle cx="50" cy="50" r="40" fill="var(--bg-secondary)" />
+      <text x="50" y="50" class="pie-center-text" transform="rotate(90 50 50)">暂无数据</text>
+    `;
+    legend.innerHTML = '<div class="empty-message" style="padding: 20px; font-size: 13px;">该分类暂无资产</div>';
+    return;
+  }
+  
+  // 基于分类颜色生成子类颜色
+  const baseColor = CATEGORY_COLORS[category] || '#6366f1';
+  const subtypeColors = generateColorShades(baseColor, subtypes.length);
+  
+  let paths = '';
+  let currentAngle = 0;
+  
+  subtypes.forEach((subtype, index) => {
+    const value = subtypeStats[subtype];
+    const percentage = value / total;
+    const angle = percentage * 360;
+    const color = subtypeColors[index];
+    
+    const startAngle = currentAngle;
+    const endAngle = currentAngle + angle;
+    const largeArc = angle > 180 ? 1 : 0;
+    
+    const x1 = 50 + 40 * Math.cos(startAngle * Math.PI / 180);
+    const y1 = 50 + 40 * Math.sin(startAngle * Math.PI / 180);
+    const x2 = 50 + 40 * Math.cos(endAngle * Math.PI / 180);
+    const y2 = 50 + 40 * Math.sin(endAngle * Math.PI / 180);
+    
+    if (percentage > 0.001) {
+      paths += `
+        <path 
+          class="pie-slice" 
+          d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
+          fill="${color}"
+        />
+      `;
+    }
+    
+    currentAngle += angle;
+  });
+  
+  // 中心圆
+  paths += `<circle cx="50" cy="50" r="25" fill="var(--bg-card)" />`;
+  
+  svg.innerHTML = paths;
+  
+  // 渲染图例
+  legend.innerHTML = subtypes.map((subtype, index) => {
+    const value = subtypeStats[subtype];
+    const percentage = ((value / total) * 100).toFixed(1);
+    const color = subtypeColors[index];
+    return `
+      <div class="legend-item">
+        <span class="legend-dot" style="background: ${color}"></span>
+        <span class="legend-text">${subtype}</span>
+        <span class="legend-value">${percentage}%</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// 选择分类
+function selectCategory(category) {
+  selectedCategory = category;
+  renderCategoryPieChart(allAssets);
+  renderSubtypePieChart(allAssets, category);
+}
+
+// 生成颜色渐变
+function generateColorShades(baseColor, count) {
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    const lightness = 60 - (i * 10);
+    const saturation = 70 + (i * 5);
+    colors.push(adjustColor(baseColor, i, count));
+  }
+  return colors;
+}
+
+// 调整颜色亮度
+function adjustColor(hex, index, total) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  
+  const factor = 1 - (index * 0.15);
+  const newR = Math.round(Math.min(255, r * factor + (255 - r * factor) * 0.3));
+  const newG = Math.round(Math.min(255, g * factor + (255 - g * factor) * 0.3));
+  const newB = Math.round(Math.min(255, b * factor + (255 - b * factor) * 0.3));
+  
+  return `rgb(${newR}, ${newG}, ${newB})`;
 }
 
 // 加载资产列表
@@ -228,19 +507,25 @@ async function loadAssets() {
     if (assets.length === 0) {
       assetsList.innerHTML = '<div class="empty-message">暂无资产记录，点击"添加资产"开始记录</div>';
     } else {
-      assetsList.innerHTML = assets.map(asset => `
-        <div class="asset-item">
-          <div class="asset-info">
-            <h4>${escapeHtml(asset.name)}</h4>
-            <span>${asset.type} ${asset.description ? '· ' + escapeHtml(asset.description) : ''}</span>
+      assetsList.innerHTML = assets.map(asset => {
+        const color = CATEGORY_COLORS[asset.category] || '#6366f1';
+        const isLiability = asset.category === '负债';
+        return `
+          <div class="asset-item">
+            <div class="asset-info">
+              <h4>${escapeHtml(asset.name)}</h4>
+              <span style="color: ${color}">${asset.category} · ${asset.type}${asset.description ? ' · ' + escapeHtml(asset.description) : ''}</span>
+            </div>
+            <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
+              ${isLiability ? '-' : ''}¥${formatNumber(asset.amount)}
+            </div>
+            <div class="asset-actions">
+              <button class="edit-btn" onclick="editAsset(${asset.id})">编辑</button>
+              <button class="delete-btn" onclick="deleteAsset(${asset.id})">删除</button>
+            </div>
           </div>
-          <div class="asset-amount">¥${formatNumber(asset.amount)}</div>
-          <div class="asset-actions">
-            <button class="edit-btn" onclick="editAsset(${asset.id})">编辑</button>
-            <button class="delete-btn" onclick="deleteAsset(${asset.id})">删除</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
   } catch (err) {
     console.error('加载资产失败:', err);
@@ -250,25 +535,43 @@ async function loadAssets() {
 // 加载统计
 async function loadStatistics() {
   try {
-    const res = await fetch(`${API_BASE}/statistics`, {
+    const res = await fetch(`${API_BASE}/assets`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    const stats = await res.json();
+    const assets = await res.json();
+    
+    // 按大类统计
+    const categoryStats = {};
+    assets.forEach(asset => {
+      const cat = asset.category || '其他';
+      if (!categoryStats[cat]) {
+        categoryStats[cat] = { amount: 0, count: 0 };
+      }
+      categoryStats[cat].amount += asset.amount;
+      categoryStats[cat].count++;
+    });
     
     const typeStats = document.getElementById('type-stats');
-    if (stats.byType.length === 0) {
+    const categories = Object.keys(categoryStats);
+    
+    if (categories.length === 0) {
       typeStats.innerHTML = '<div class="empty-message">暂无数据</div>';
     } else {
-      const maxAmount = Math.max(...stats.byType.map(t => t.amount));
-      typeStats.innerHTML = stats.byType.map(item => {
-        const percentage = maxAmount > 0 ? (item.amount / maxAmount * 100) : 0;
+      const maxAmount = Math.max(...categories.map(c => Math.abs(categoryStats[c].amount)));
+      typeStats.innerHTML = categories.map(category => {
+        const stat = categoryStats[category];
+        const percentage = maxAmount > 0 ? (Math.abs(stat.amount) / maxAmount * 100) : 0;
+        const color = CATEGORY_COLORS[category] || '#6366f1';
+        const isLiability = category === '负债';
         return `
           <div class="type-item">
-            <span class="type-label">${item.type}</span>
+            <span class="type-label" style="color: ${color}">${category}</span>
             <div class="type-bar">
-              <div class="type-bar-fill" style="width: ${percentage}%"></div>
+              <div class="type-bar-fill" style="width: ${percentage}%; background: ${color}"></div>
             </div>
-            <span class="type-amount">¥${formatNumber(item.amount)}</span>
+            <span class="type-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
+              ${isLiability ? '-' : ''}¥${formatNumber(stat.amount)}
+            </span>
           </div>
         `;
       }).join('');
@@ -282,18 +585,36 @@ async function loadStatistics() {
 function openAssetModal(asset = null) {
   const modal = document.getElementById('asset-modal');
   const title = document.getElementById('modal-title');
+  const categorySelect = document.getElementById('asset-category');
+  const typeSelect = document.getElementById('asset-type');
   
   if (asset) {
     title.textContent = '编辑资产';
     document.getElementById('asset-id').value = asset.id;
     document.getElementById('asset-name').value = asset.name;
-    document.getElementById('asset-type').value = asset.type;
     document.getElementById('asset-amount').value = asset.amount;
     document.getElementById('asset-description').value = asset.description || '';
+    
+    // 设置分类
+    categorySelect.value = asset.category || '';
+    
+    // 更新子类选项
+    typeSelect.innerHTML = '<option value="">请选择子类</option>';
+    if (asset.category && ASSET_CATEGORIES[asset.category]) {
+      ASSET_CATEGORIES[asset.category].forEach(subtype => {
+        const option = document.createElement('option');
+        option.value = subtype;
+        option.textContent = subtype;
+        typeSelect.appendChild(option);
+      });
+    }
+    typeSelect.value = asset.type || '';
   } else {
     title.textContent = '添加资产';
     document.getElementById('asset-form').reset();
     document.getElementById('asset-id').value = '';
+    categorySelect.value = '';
+    typeSelect.innerHTML = '<option value="">请先选择类型</option>';
   }
   
   modal.classList.remove('hidden');
@@ -336,6 +657,7 @@ async function deleteAsset(id) {
     }
     
     loadAssets();
+    loadDashboard();
   } catch (err) {
     alert(err.message);
   }
