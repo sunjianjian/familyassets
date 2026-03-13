@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家庭资产管理系统</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 登录/注册页面 -->
+    <div id="auth-page" class="page">
+      <div class="auth-container">
+        <h1>家庭资产管理系统</h1>
+        <div class="tabs">
+          <button class="tab active" data-tab="login">登录</button>
+          <button class="tab" data-tab="register">注册</button>
+        </div>
+        
+        <form id="login-form" class="auth-form">
+          <input type="text" id="login-username" placeholder="用户名" required>
+          <input type="password" id="login-password" placeholder="密码" required>
+          <button type="submit">登录</button>
+        </form>
+        
+        <form id="register-form" class="auth-form hidden">
+          <input type="text" id="register-username" placeholder="用户名" required>
+          <input type="password" id="register-password" placeholder="密码 (至少6位)" required>
+          <input type="password" id="register-confirm" placeholder="确认密码" required>
+          <button type="submit">注册</button>
+        </form>
+        
+        <p id="auth-error" class="error"></p>
+      </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div id="main-page" class="page hidden">
+      <header>
+        <h1>家庭资产管理</h1>
+        <div class="user-info">
+          <span id="current-user"></span>
+          <button id="logout-btn">退出</button>
+        </div>
+      </header>
+
+      <nav class="main-nav">
+        <button class="nav-btn active" data-view="dashboard">资产概览</button>
+        <button class="nav-btn" data-view="assets">资产管理</button>
+        <button class="nav-btn" data-view="statistics">统计分析</button>
+      </nav>
+
+      <!-- 资产概览 -->
+      <div id="dashboard-view" class="view">
+        <div class="stats-cards">
+          <div class="stat-card">
+            <h3>总资产</h3>
+            <p id="total-assets">¥0.00</p>
+          </div>
+          <div class="stat-card">
+            <h3>资产数量</h3>
+            <p id="assets-count">0</p>
+          </div>
+        </div>
+        <div class="recent-assets">
+          <h3>最近资产</h3>
+          <div id="recent-list"></div>
+        </div>
+      </div>
+
+      <!-- 资产管理 -->
+      <div id="assets-view" class="view hidden">
+        <div class="assets-header">
+          <h2>资产列表</h2>
+          <button id="add-asset-btn" class="btn-primary">添加资产</button>
+        </div>
+        <div id="assets-list"></div>
+      </div>
+
+      <!-- 统计分析 -->
+      <div id="statistics-view" class="view hidden">
+        <h2>资产统计</h2>
+        <div class="chart-container">
+          <div id="type-stats"></div>
+        </div>
+      </div>
+
+      <!-- 添加/编辑资产弹窗 -->
+      <div id="asset-modal" class="modal hidden">
+        <div class="modal-content">
+          <h3 id="modal-title">添加资产</h3>
+          <form id="asset-form">
+            <input type="hidden" id="asset-id">
+            <div class="form-group">
+              <label>资产名称</label>
+              <input type="text" id="asset-name" required>
+            </div>
+            <div class="form-group">
+              <label>资产类型</label>
+              <select id="asset-type" required>
+                <option value="现金">现金</option>
+                <option value="银行存款">银行存款</option>
+                <option value="股票">股票</option>
+                <option value="基金">基金</option>
+                <option value="房产">房产</option>
+                <option value="车辆">车辆</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>金额 (元)</label>
+              <input type="number" id="asset-amount" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label>备注</label>
+              <textarea id="asset-description"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" id="cancel-btn">取消</button>
+              <button type="submit" class="btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
