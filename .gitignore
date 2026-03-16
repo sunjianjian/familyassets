@@ -1,6 +1,5 @@
 node_modules/
-server/database.sqlite
-server/database.json
+data/
 .DS_Store
 .vercel
 .env*.local
