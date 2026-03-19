@@ -1,0 +1,7 @@
+name = "familyassets"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "./public"
+
+[[kv_namespaces]]
+binding = "FAMILYASSETS_KV"
+id = "94f4ed2e8f9a495d9bb12fa2100af156"
