@@ -5,14 +5,19 @@
   "main": "local.js",
   "scripts": {
     "start": "node local.js",
-    "dev": "node local.js"
+    "dev": "node local.js",
+    "agent": "node agent.mjs"
   },
   "dependencies": {
+    "@langchain/core": "^1.1.34",
+    "@langchain/openai": "^1.3.0",
     "@vercel/kv": "^2.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "langchain": "^1.2.35",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "wrangler": "^4.75.0"
