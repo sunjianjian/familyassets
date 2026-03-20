@@ -190,6 +190,8 @@ function initEventListeners() {
       category: category,
       type: type,
       amount: parseFloat(document.getElementById('asset-amount').value),
+      principal: parseFloat(document.getElementById('asset-principal').value) || parseFloat(document.getElementById('asset-amount').value),
+      expectedReturn: parseFloat(document.getElementById('asset-expected-return').value) || 0,
       description: document.getElementById('asset-description').value
     };
     
@@ -249,7 +251,16 @@ async function loadDashboard() {
     const totalLiabilities = assets.filter(a => a.category === '负债').reduce((sum, a) => sum + a.amount, 0);
     const netWorth = totalAssets - totalLiabilities;
     
+    // 计算预期年收益（本金 * 预期年化收益率 / 100，负债不计算）
+    const expectedAnnualReturn = assets
+      .filter(a => a.category !== '负债')
+      .reduce((sum, a) => {
+        const principal = a.principal || a.amount;
+        return sum + (principal * (a.expectedReturn || 0) / 100);
+      }, 0);
+    
     document.getElementById('total-assets').textContent = `¥${formatNumber(netWorth)}`;
+    document.getElementById('expected-annual-return').textContent = `¥${formatNumber(expectedAnnualReturn)}`;
     document.getElementById('assets-count').textContent = stats.count;
     
     // 渲染饼图
@@ -272,11 +283,12 @@ async function loadDashboard() {
       recentList.innerHTML = sortedAssets.map(asset => {
         const color = CATEGORY_COLORS[asset.category] || '#6366f1';
         const isLiability = asset.category === '负债';
+        const returnRate = asset.expectedReturn || 0;
         return `
           <div class="asset-item">
             <div class="asset-info">
               <h4>${escapeHtml(asset.name)}</h4>
-              <span style="color: ${color}">${asset.category} · ${asset.type}</span>
+              <span style="color: ${color}">${asset.category} · ${asset.type}${returnRate > 0 ? ` · 年化${returnRate}%` : ''}</span>
             </div>
             <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
               ${isLiability ? '-' : ''}¥${formatNumber(asset.amount)}
@@ -510,11 +522,12 @@ async function loadAssets() {
       assetsList.innerHTML = assets.map(asset => {
         const color = CATEGORY_COLORS[asset.category] || '#6366f1';
         const isLiability = asset.category === '负债';
+        const returnRate = asset.expectedReturn || 0;
         return `
           <div class="asset-item">
             <div class="asset-info">
               <h4>${escapeHtml(asset.name)}</h4>
-              <span style="color: ${color}">${asset.category} · ${asset.type}${asset.description ? ' · ' + escapeHtml(asset.description) : ''}</span>
+              <span style="color: ${color}">${asset.category} · ${asset.type}${returnRate > 0 ? ` · 年化${returnRate}%` : ''}${asset.description ? ' · ' + escapeHtml(asset.description) : ''}</span>
             </div>
             <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
               ${isLiability ? '-' : ''}¥${formatNumber(asset.amount)}
@@ -593,6 +606,8 @@ function openAssetModal(asset = null) {
     document.getElementById('asset-id').value = asset.id;
     document.getElementById('asset-name').value = asset.name;
     document.getElementById('asset-amount').value = asset.amount;
+    document.getElementById('asset-principal').value = asset.principal || '';
+    document.getElementById('asset-expected-return').value = asset.expectedReturn || 0;
     document.getElementById('asset-description').value = asset.description || '';
     
     // 设置分类
@@ -613,6 +628,8 @@ function openAssetModal(asset = null) {
     title.textContent = '添加资产';
     document.getElementById('asset-form').reset();
     document.getElementById('asset-id').value = '';
+    document.getElementById('asset-principal').value = '';
+    document.getElementById('asset-expected-return').value = '';
     categorySelect.value = '';
     typeSelect.innerHTML = '<option value="">请先选择类型</option>';
   }

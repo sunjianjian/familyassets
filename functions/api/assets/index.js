@@ -27,13 +27,14 @@ export async function onRequestPost(context) {
   }
   
   try {
-    const { name, category, type, amount, description } = await request.json();
+    const { name, category, type, amount, principal, description, expectedReturn } = await request.json();
     
     if (!name || !category || !type || amount === undefined) {
       return jsonResponse({ error: '请填写完整信息' }, 400);
     }
     
     const db = await getDB(env);
+    const amountNum = parseFloat(amount);
     
     const asset = {
       id: db.nextAssetId++,
@@ -41,7 +42,9 @@ export async function onRequestPost(context) {
       name,
       category,
       type,
-      amount: parseFloat(amount),
+      amount: amountNum,
+      principal: parseFloat(principal) || amountNum,
+      expectedReturn: parseFloat(expectedReturn) || 0,
       description: description || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

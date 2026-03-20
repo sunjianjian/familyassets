@@ -11,7 +11,7 @@ export async function onRequestPut(context) {
   }
   
   try {
-    const { name, category, type, amount, description } = await request.json();
+    const { name, category, type, amount, principal, description, expectedReturn } = await request.json();
     const db = await getDB(env);
     
     const assetIndex = db.assets.findIndex(a => a.id === assetId && a.user_id === userId);
@@ -19,12 +19,15 @@ export async function onRequestPut(context) {
       return jsonResponse({ error: '资产不存在' }, 404);
     }
     
+    const newAmount = amount !== undefined ? parseFloat(amount) : db.assets[assetIndex].amount;
     db.assets[assetIndex] = {
       ...db.assets[assetIndex],
       name: name || db.assets[assetIndex].name,
       category: category || db.assets[assetIndex].category,
       type: type || db.assets[assetIndex].type,
-      amount: amount !== undefined ? parseFloat(amount) : db.assets[assetIndex].amount,
+      amount: newAmount,
+      principal: principal !== undefined ? parseFloat(principal) : (db.assets[assetIndex].principal || newAmount),
+      expectedReturn: expectedReturn !== undefined ? parseFloat(expectedReturn) : (db.assets[assetIndex].expectedReturn || 0),
       description: description !== undefined ? description : db.assets[assetIndex].description,
       updated_at: new Date().toISOString()
     };

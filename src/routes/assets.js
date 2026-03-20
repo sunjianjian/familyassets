@@ -20,7 +20,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // 添加资产
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name, category, type, amount, description } = req.body;
+    const { name, category, type, amount, principal, description, expectedReturn } = req.body;
 
     if (!name || !type || amount === undefined) {
       return res.status(400).json({ error: '资产名称、类型和金额不能为空' });
@@ -35,6 +35,8 @@ router.post('/', authMiddleware, async (req, res) => {
       category: category || '',
       type,
       amount: Number(amount),
+      principal: Number(principal) || Number(amount),
+      expectedReturn: Number(expectedReturn) || 0,
       description: description || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -53,7 +55,7 @@ router.post('/', authMiddleware, async (req, res) => {
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, category, type, amount, description } = req.body;
+    const { name, category, type, amount, principal, description, expectedReturn } = req.body;
 
     const db = await getDB();
     const idx = db.assets.findIndex(a => a.id === id && a.user_id === req.userId);
@@ -62,12 +64,15 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: '资产不存在' });
     }
 
+    const newAmount = Number(amount);
     db.assets[idx] = {
       ...db.assets[idx],
       name,
       category: category || '',
       type,
-      amount: Number(amount),
+      amount: newAmount,
+      principal: Number(principal) || newAmount,
+      expectedReturn: Number(expectedReturn) || 0,
       description: description || '',
       updated_at: new Date().toISOString()
     };
