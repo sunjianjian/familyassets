@@ -361,16 +361,21 @@ function renderCategoryPieChart(assets) {
     const isActive = category === selectedCategory;
     
     if (percentage > 0.001) {
-      paths += `
-        <path 
-          class="pie-slice ${isActive ? 'active' : ''}" 
-          d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
-          fill="${color}"
-          data-category="${category}"
-          onclick="selectCategory('${category}')"
-          style="color: ${color}"
-        />
-      `;
+      if (percentage >= 0.9999) {
+        // 360° 圆弧起终点重合，SVG 无法渲染，改用 circle
+        paths += `<circle cx="50" cy="50" r="40" fill="${color}" data-category="${category}" onclick="selectCategory('${category}')" class="pie-slice ${isActive ? 'active' : ''}" style="cursor:pointer" />`;
+      } else {
+        paths += `
+          <path 
+            class="pie-slice ${isActive ? 'active' : ''}" 
+            d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
+            fill="${color}"
+            data-category="${category}"
+            onclick="selectCategory('${category}')"
+            style="color: ${color}"
+          />
+        `;
+      }
     }
     
     currentAngle += angle;
@@ -453,13 +458,18 @@ function renderSubtypePieChart(assets, category) {
     const y2 = 50 + 40 * Math.sin(endAngle * Math.PI / 180);
     
     if (percentage > 0.001) {
-      paths += `
-        <path 
-          class="pie-slice" 
-          d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
-          fill="${color}"
-        />
-      `;
+      if (percentage >= 0.9999) {
+        // 360° 圆弧起终点重合，SVG 无法渲染，改用 circle
+        paths += `<circle cx="50" cy="50" r="40" fill="${color}" class="pie-slice" />`;
+      } else {
+        paths += `
+          <path 
+            class="pie-slice" 
+            d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
+            fill="${color}"
+          />
+        `;
+      }
     }
     
     currentAngle += angle;
