@@ -26,7 +26,7 @@ export async function onRequestPut(context) {
       category: category || db.assets[assetIndex].category,
       type: type || db.assets[assetIndex].type,
       amount: newAmount,
-      principal: principal !== undefined ? parseFloat(principal) : (db.assets[assetIndex].principal || newAmount),
+      principal: principal !== undefined ? (principal != null && principal !== '' ? parseFloat(principal) : null) : db.assets[assetIndex].principal,
       expectedReturn: expectedReturn !== undefined ? parseFloat(expectedReturn) : (db.assets[assetIndex].expectedReturn || 0),
       description: description !== undefined ? description : db.assets[assetIndex].description,
       updated_at: new Date().toISOString()

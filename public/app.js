@@ -189,7 +189,7 @@ function initEventListeners() {
       category: category,
       type: type,
       amount: parseFloat(document.getElementById('asset-amount').value),
-      principal: parseFloat(document.getElementById('asset-principal').value) || parseFloat(document.getElementById('asset-amount').value),
+      principal: parseFloat(document.getElementById('asset-principal').value) || null,
       expectedReturn: parseFloat(document.getElementById('asset-expected-return').value) || 0,
       description: document.getElementById('asset-description').value
     };

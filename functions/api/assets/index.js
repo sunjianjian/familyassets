@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
       category,
       type,
       amount: amountNum,
-      principal: parseFloat(principal) || amountNum,
+      principal: (principal != null && principal !== '') ? parseFloat(principal) : null,
       expectedReturn: parseFloat(expectedReturn) || 0,
       description: description || '',
       created_at: new Date().toISOString(),
