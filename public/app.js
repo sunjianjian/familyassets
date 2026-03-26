@@ -245,21 +245,23 @@ async function loadDashboard() {
     const assets = await assetsRes.json();
     allAssets = assets;
     
-    // 计算净资产（资产 - 负债）
+    // 计算净资产
     const totalAssets = assets.filter(a => a.category !== '负债').reduce((sum, a) => sum + a.amount, 0);
     const totalLiabilities = assets.filter(a => a.category === '负债').reduce((sum, a) => sum + a.amount, 0);
     const netWorth = totalAssets - totalLiabilities;
-    
-    // 计算预期年收益（本金 * 预期年化收益率 / 100，负债不计算）
-    const expectedAnnualReturn = assets
-      .filter(a => a.category !== '负债')
-      .reduce((sum, a) => {
-        const principal = a.principal || a.amount;
-        return sum + (principal * (a.expectedReturn || 0) / 100);
-      }, 0);
-    
+
+    // 计算预期年收益与加权平均年化率
+    const nonLiabilityAssets = assets.filter(a => a.category !== '负债');
+    const expectedAnnualReturn = nonLiabilityAssets.reduce((sum, a) => {
+      const principal = a.principal || a.amount;
+      return sum + principal * (a.expectedReturn || 0) / 100;
+    }, 0);
+    const totalPrincipal = nonLiabilityAssets.reduce((sum, a) => sum + (a.principal || a.amount), 0);
+    const weightedAvgRate = totalPrincipal > 0 ? expectedAnnualReturn / totalPrincipal * 100 : 0;
+
     document.getElementById('total-assets').textContent = `¥${formatNumber(netWorth)}`;
-    document.getElementById('expected-annual-return').textContent = `¥${formatNumber(expectedAnnualReturn)}`;
+    document.getElementById('net-annual-rate').textContent = weightedAvgRate > 0.001 ? `年化 ${weightedAvgRate.toFixed(2)}%` : '年化 --';
+    document.getElementById('net-annual-return').textContent = `年收益 ¥${formatNumber(expectedAnnualReturn)}`;
     
     // 渲染饼图
     renderCategoryPieChart(assets);
