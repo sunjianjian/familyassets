@@ -260,7 +260,6 @@ async function loadDashboard() {
     
     document.getElementById('total-assets').textContent = `¥${formatNumber(netWorth)}`;
     document.getElementById('expected-annual-return').textContent = `¥${formatNumber(expectedAnnualReturn)}`;
-    document.getElementById('assets-count').textContent = stats.count;
     
     // 渲染饼图
     renderCategoryPieChart(assets);
