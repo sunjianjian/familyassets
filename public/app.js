@@ -147,7 +147,6 @@ function initEventListeners() {
       
       if (btn.dataset.view === 'dashboard') loadDashboard();
       if (btn.dataset.view === 'assets') loadAssets();
-      if (btn.dataset.view === 'statistics') loadStatistics();
     });
   });
 
@@ -542,55 +541,6 @@ async function loadAssets() {
     }
   } catch (err) {
     console.error('加载资产失败:', err);
-  }
-}
-
-// 加载统计
-async function loadStatistics() {
-  try {
-    const res = await fetch(`${API_BASE}/assets`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const assets = await res.json();
-    
-    // 按大类统计
-    const categoryStats = {};
-    assets.forEach(asset => {
-      const cat = asset.category || '其他';
-      if (!categoryStats[cat]) {
-        categoryStats[cat] = { amount: 0, count: 0 };
-      }
-      categoryStats[cat].amount += asset.amount;
-      categoryStats[cat].count++;
-    });
-    
-    const typeStats = document.getElementById('type-stats');
-    const categories = Object.keys(categoryStats);
-    
-    if (categories.length === 0) {
-      typeStats.innerHTML = '<div class="empty-message">暂无数据</div>';
-    } else {
-      const maxAmount = Math.max(...categories.map(c => Math.abs(categoryStats[c].amount)));
-      typeStats.innerHTML = categories.map(category => {
-        const stat = categoryStats[category];
-        const percentage = maxAmount > 0 ? (Math.abs(stat.amount) / maxAmount * 100) : 0;
-        const color = CATEGORY_COLORS[category] || '#6366f1';
-        const isLiability = category === '负债';
-        return `
-          <div class="type-item">
-            <span class="type-label" style="color: ${color}">${category}</span>
-            <div class="type-bar">
-              <div class="type-bar-fill" style="width: ${percentage}%; background: ${color}"></div>
-            </div>
-            <span class="type-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
-              ${isLiability ? '-' : ''}¥${formatNumber(stat.amount)}
-            </span>
-          </div>
-        `;
-      }).join('');
-    }
-  } catch (err) {
-    console.error('加载统计失败:', err);
   }
 }
 
