@@ -260,7 +260,6 @@ async function loadDashboard() {
     const weightedAvgRate = totalPrincipal > 0 ? expectedAnnualReturn / totalPrincipal * 100 : 0;
 
     document.getElementById('total-assets').textContent = `¥${formatNumber(netWorth)}`;
-    document.getElementById('net-annual-rate').textContent = weightedAvgRate > 0.001 ? `年化 ${weightedAvgRate.toFixed(2)}%` : '年化 --';
     document.getElementById('net-annual-return').textContent = `年收益 ¥${formatNumber(expectedAnnualReturn)}`;
     
     // 渲染饼图
@@ -548,7 +547,14 @@ async function loadAssets() {
     if (assets.length === 0) {
       assetsList.innerHTML = '<div class="empty-message">暂无资产记录，点击"添加资产"开始记录</div>';
     } else {
-      assetsList.innerHTML = assets.map(asset => {
+      const categoryOrder = ['现金', '固收', '权益', '另类', '负债'];
+      const sorted = [...assets].sort((a, b) => {
+        const orderA = categoryOrder.indexOf(a.category);
+        const orderB = categoryOrder.indexOf(b.category);
+        if (orderA !== orderB) return orderA - orderB;
+        return b.amount - a.amount; // 同大类内按金额降序
+      });
+      assetsList.innerHTML = sorted.map(asset => {
         const color = CATEGORY_COLORS[asset.category] || '#6366f1';
         const isLiability = asset.category === '负债';
         const returnRate = asset.expectedReturn || 0;
