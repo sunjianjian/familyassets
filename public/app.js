@@ -24,8 +24,8 @@ const SUBTYPE_COLORS = [
   '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a', '#172554'
 ];
 
-// 当前选中的分类
-let selectedCategory = '固收';
+// 当前选中的分类（null 表示无选中）
+let selectedCategory = null;
 let allAssets = [];
 
 // 状态管理
@@ -263,7 +263,6 @@ async function loadDashboard() {
     
     // 渲染饼图
     renderCategoryPieChart(assets);
-    renderSubtypePieChart(assets, selectedCategory);
     
     // 按子类汇总
     const categoryOrder = ['现金', '固收', '权益', '另类', '负债'];
@@ -486,11 +485,18 @@ function renderSubtypePieChart(assets, category) {
   }).join('');
 }
 
-// 选择分类
+// 选择分类（再次点击同一类则取消）
 function selectCategory(category) {
-  selectedCategory = category;
+  const card = document.getElementById('subtype-chart-card');
+  if (selectedCategory === category) {
+    selectedCategory = null;
+    card.classList.add('hidden');
+  } else {
+    selectedCategory = category;
+    card.classList.remove('hidden');
+    renderSubtypePieChart(allAssets, category);
+  }
   renderCategoryPieChart(allAssets);
-  renderSubtypePieChart(allAssets, category);
 }
 
 // 生成颜色渐变
