@@ -348,6 +348,14 @@ header h1 {
   color: var(--text-secondary);
 }
 
+.inline-rate {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 6px;
+  opacity: 0.8;
+}
+
 .asset-item-sub .asset-amount {
   font-size: 15px;
   font-weight: 600;

@@ -312,8 +312,7 @@ async function loadDashboard() {
             html += `
               <div class="asset-item asset-item-sub">
                 <div class="asset-info">
-                  <h4>${escapeHtml(type)}</h4>
-                  ${avgRate > 0.001 ? `<span>年化${avgRate.toFixed(2)}%</span>` : ''}
+                  <h4>${escapeHtml(type)}${avgRate > 0.001 ? `<small class="inline-rate">年化${avgRate.toFixed(2)}%</small>` : ''}</h4>
                 </div>
                 <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
                   ${isLiability ? '-' : ''}¥${formatNumber(g.totalAmount)}
