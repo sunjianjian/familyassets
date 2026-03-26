@@ -337,6 +337,42 @@ header h1 {
   transition: all 0.2s ease;
 }
 
+.asset-item-sub {
+  padding-left: 36px;
+  background: rgba(255,255,255,0.01);
+}
+
+.asset-item-sub .asset-info h4 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.asset-item-sub .asset-amount {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.category-header-name {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-header-amount {
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .asset-item:last-child {
   border-bottom: none;
 }

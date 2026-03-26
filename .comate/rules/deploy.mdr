@@ -15,6 +15,6 @@ export PATH=$HOME/.n/bin:$PATH && npx wrangler pages deploy ./public --project-n
 
 ## 注意事项
 
-- 部署完成后访问地址：https://familyassets.pages.dev
+- 部署完成后访问地址：https://master.familyassets.pages.dev
 - macOS 12 环境下 wrangler 会有 Warning 提示，可忽略，不影响部署
 - 每次部署后同步提交 git，保持代码与线上一致

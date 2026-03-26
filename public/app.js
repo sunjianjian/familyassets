@@ -265,48 +265,64 @@ async function loadDashboard() {
     // 渲染饼图
     renderCategoryPieChart(assets);
     
-    // 按子类汇总
+    // 按一级分类 → 二级子类汇总
     const categoryOrder = ['现金', '固收', '权益', '另类', '负债'];
-    const grouped = {};
+    const categoryMap = {};
     assets.forEach(asset => {
-      const key = `${asset.category}||${asset.type}`;
-      if (!grouped[key]) {
-        grouped[key] = { category: asset.category, type: asset.type, totalAmount: 0, totalPrincipal: 0, totalExpectedReturn: 0 };
+      const cat = asset.category;
+      const type = asset.type;
+      if (!categoryMap[cat]) categoryMap[cat] = { totalAmount: 0, groups: {} };
+      categoryMap[cat].totalAmount += asset.amount;
+      if (!categoryMap[cat].groups[type]) {
+        categoryMap[cat].groups[type] = { totalAmount: 0, totalPrincipal: 0, totalExpectedReturn: 0 };
       }
-      const g = grouped[key];
+      const g = categoryMap[cat].groups[type];
       g.totalAmount += asset.amount;
       const principal = asset.principal || asset.amount;
       g.totalPrincipal += principal;
       g.totalExpectedReturn += principal * (asset.expectedReturn || 0) / 100;
     });
 
-    const sortedGroups = Object.values(grouped).sort((a, b) => {
-      const orderA = categoryOrder.indexOf(a.category);
-      const orderB = categoryOrder.indexOf(b.category);
-      if (orderA !== orderB) return orderA - orderB;
-      return b.totalAmount - a.totalAmount; // 同大类内按金额降序
-    });
-
     const recentList = document.getElementById('recent-list');
-    if (sortedGroups.length === 0) {
+    if (Object.keys(categoryMap).length === 0) {
       recentList.innerHTML = '<div class="empty-message">暂无资产记录</div>';
     } else {
-      recentList.innerHTML = sortedGroups.map(group => {
-        const color = CATEGORY_COLORS[group.category] || '#6366f1';
-        const isLiability = group.category === '负债';
-        const avgRate = group.totalPrincipal > 0 ? group.totalExpectedReturn / group.totalPrincipal * 100 : 0;
-        return `
-          <div class="asset-item">
-            <div class="asset-info">
-              <h4>${escapeHtml(group.type)}</h4>
-              <span style="color: ${color}">${group.category}${avgRate > 0.001 ? ` · 年化${avgRate.toFixed(2)}%` : ''}</span>
-            </div>
-            <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
-              ${isLiability ? '-' : ''}¥${formatNumber(group.totalAmount)}
-            </div>
+      let html = '';
+      categoryOrder.forEach(cat => {
+        if (!categoryMap[cat]) return;
+        const catData = categoryMap[cat];
+        const color = CATEGORY_COLORS[cat] || '#6366f1';
+        const isLiability = cat === '负债';
+
+        // 一级分类标题行
+        html += `
+          <div class="category-header">
+            <span class="category-header-name" style="color: ${color}">${cat}</span>
+            <span class="category-header-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
+              ${isLiability ? '-' : ''}¥${formatNumber(catData.totalAmount)}
+            </span>
           </div>
         `;
-      }).join('');
+
+        // 二级子类，按金额降序
+        Object.entries(catData.groups)
+          .sort((a, b) => b[1].totalAmount - a[1].totalAmount)
+          .forEach(([type, g]) => {
+            const avgRate = g.totalPrincipal > 0 ? g.totalExpectedReturn / g.totalPrincipal * 100 : 0;
+            html += `
+              <div class="asset-item asset-item-sub">
+                <div class="asset-info">
+                  <h4>${escapeHtml(type)}</h4>
+                  ${avgRate > 0.001 ? `<span>年化${avgRate.toFixed(2)}%</span>` : ''}
+                </div>
+                <div class="asset-amount" style="color: ${isLiability ? '#ef4444' : '#22c55e'}">
+                  ${isLiability ? '-' : ''}¥${formatNumber(g.totalAmount)}
+                </div>
+              </div>
+            `;
+          });
+      });
+      recentList.innerHTML = html;
     }
   } catch (err) {
     console.error('加载概览失败:', err);
