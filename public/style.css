@@ -688,27 +688,24 @@ header h1 {
   text-align: center;
 }
 
-/* pie chart 与图例：图例在左，饼图在右 */
+/* pie chart 与图例：饼图在上，图例在下横排 */
 .pie-chart-container {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* 图例在左（order:-1），SVG 在右（默认 order:0） */
+/* 图例横排显示 */
 .pie-chart-container .chart-legend {
-  order: -1;
   display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-start;
-  flex-shrink: 0;
-  gap: 4px;
+  align-items: center;
+  gap: 6px 10px;
 }
 
 .pie-chart {
