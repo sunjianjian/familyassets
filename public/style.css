@@ -695,9 +695,15 @@ header h1 {
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
+/* 图例在左（order:-1），SVG 在右（默认 order:0） */
 .pie-chart-container .chart-legend {
+  order: -1;
+  flex: 1;
+  min-width: 0;
   flex-direction: column;
   flex-wrap: nowrap;
   justify-content: center;
