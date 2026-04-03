@@ -304,6 +304,14 @@ header h1 {
 .goal-progress-section {
   flex: 1;
   min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* 内容整体居中 */
+}
+
+/* 目标列表本身撑满自己的半区 */
+#goal-progress-list {
+  width: 100%;
 }
 
 .goal-progress-title {
@@ -683,17 +691,21 @@ header h1 {
   text-align: center;
 }
 
+/* pie chart 与图例：改为上下列布局 */
 .pie-chart-container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex: 1;
 }
 
 .pie-chart-container .chart-legend {
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+}
 }
 
 .pie-chart {

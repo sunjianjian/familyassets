@@ -24,8 +24,6 @@ const SUBTYPE_COLORS = [
   '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a', '#172554'
 ];
 
-// 当前选中的分类（null 表示无选中）
-let selectedCategory = null;
 let allAssets = [];
 
 // 状态管理
@@ -448,108 +446,8 @@ function renderCategoryPieChart(assets) {
     const x2 = 50 + 40 * Math.cos(endAngle * Math.PI / 180);
     const y2 = 50 + 40 * Math.sin(endAngle * Math.PI / 180);
     
-    const isActive = category === selectedCategory;
-    
     if (percentage > 0.001) {
       if (percentage >= 0.9999) {
-        // 360° 圆弧起终点重合，SVG 无法渲染，改用 circle
-        paths += `<circle cx="50" cy="50" r="40" fill="${color}" data-category="${category}" onclick="selectCategory('${category}')" class="pie-slice ${isActive ? 'active' : ''}" style="cursor:pointer" />`;
-      } else {
-        paths += `
-          <path 
-            class="pie-slice ${isActive ? 'active' : ''}" 
-            d="M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z"
-            fill="${color}"
-            data-category="${category}"
-            onclick="selectCategory('${category}')"
-            style="color: ${color}"
-          />
-        `;
-      }
-    }
-    
-    currentAngle += angle;
-  });
-  
-  // 中心圆
-  paths += `<circle cx="50" cy="50" r="25" fill="var(--bg-card)" />`;
-  
-  svg.innerHTML = paths;
-  
-  // 渲染图例
-  legend.innerHTML = categories.map(category => {
-    const value = categoryStats[category];
-    const percentage = ((value / total) * 100).toFixed(1);
-    const color = CATEGORY_COLORS[category] || '#6366f1';
-    const isActive = category === selectedCategory;
-    return `
-      <div class="legend-item ${isActive ? 'active' : ''}" onclick="selectCategory('${category}')">
-        <span class="legend-dot" style="background: ${color}"></span>
-        <span class="legend-text">${category}</span>
-        <span class="legend-value">${percentage}%</span>
-      </div>
-    `;
-  }).join('');
-}
-
-// 渲染二级资产饼图
-function renderSubtypePieChart(assets, category) {
-  const svg = document.getElementById('subtype-pie');
-  const legend = document.getElementById('subtype-legend');
-  const title = document.getElementById('subtype-title');
-  
-  title.textContent = `${category}明细`;
-  
-  // 筛选该分类下的资产
-  const categoryAssets = assets.filter(a => a.category === category);
-  
-  // 按子类统计
-  const subtypeStats = {};
-  categoryAssets.forEach(asset => {
-    const type = asset.type || '其他';
-    if (!subtypeStats[type]) {
-      subtypeStats[type] = 0;
-    }
-    subtypeStats[type] += Math.abs(asset.amount);
-  });
-  
-  const subtypes = Object.keys(subtypeStats);
-  const total = Object.values(subtypeStats).reduce((a, b) => a + b, 0);
-  
-  if (total === 0) {
-    svg.innerHTML = `
-      <circle cx="50" cy="50" r="40" fill="var(--bg-secondary)" />
-      <text x="50" y="50" class="pie-center-text" transform="rotate(90 50 50)">暂无数据</text>
-    `;
-    legend.innerHTML = '<div class="empty-message" style="padding: 20px; font-size: 13px;">该分类暂无资产</div>';
-    return;
-  }
-  
-  // 基于分类颜色生成子类颜色
-  const baseColor = CATEGORY_COLORS[category] || '#6366f1';
-  const subtypeColors = generateColorShades(baseColor, subtypes.length);
-  
-  let paths = '';
-  let currentAngle = 0;
-  
-  subtypes.forEach((subtype, index) => {
-    const value = subtypeStats[subtype];
-    const percentage = value / total;
-    const angle = percentage * 360;
-    const color = subtypeColors[index];
-    
-    const startAngle = currentAngle;
-    const endAngle = currentAngle + angle;
-    const largeArc = angle > 180 ? 1 : 0;
-    
-    const x1 = 50 + 40 * Math.cos(startAngle * Math.PI / 180);
-    const y1 = 50 + 40 * Math.sin(startAngle * Math.PI / 180);
-    const x2 = 50 + 40 * Math.cos(endAngle * Math.PI / 180);
-    const y2 = 50 + 40 * Math.sin(endAngle * Math.PI / 180);
-    
-    if (percentage > 0.001) {
-      if (percentage >= 0.9999) {
-        // 360° 圆弧起终点重合，SVG 无法渲染，改用 circle
         paths += `<circle cx="50" cy="50" r="40" fill="${color}" class="pie-slice" />`;
       } else {
         paths += `
@@ -571,58 +469,24 @@ function renderSubtypePieChart(assets, category) {
   svg.innerHTML = paths;
   
   // 渲染图例
-  legend.innerHTML = subtypes.map((subtype, index) => {
-    const value = subtypeStats[subtype];
+  legend.innerHTML = categories.map(category => {
+    const value = categoryStats[category];
     const percentage = ((value / total) * 100).toFixed(1);
-    const color = subtypeColors[index];
+    const color = CATEGORY_COLORS[category] || '#6366f1';
     return `
       <div class="legend-item">
         <span class="legend-dot" style="background: ${color}"></span>
-        <span class="legend-text">${subtype}</span>
+        <span class="legend-text">${category}</span>
         <span class="legend-value">${percentage}%</span>
       </div>
     `;
   }).join('');
 }
-
-// 选择分类（再次点击同一类则取消）
-function selectCategory(category) {
-  const card = document.getElementById('subtype-chart-card');
-  if (selectedCategory === category) {
-    selectedCategory = null;
-    card.classList.add('hidden');
-  } else {
-    selectedCategory = category;
-    card.classList.remove('hidden');
-    renderSubtypePieChart(allAssets, category);
-  }
-  renderCategoryPieChart(allAssets);
-}
-
-// 生成颜色渐变
-function generateColorShades(baseColor, count) {
-  const colors = [];
-  for (let i = 0; i < count; i++) {
-    const lightness = 60 - (i * 10);
-    const saturation = 70 + (i * 5);
-    colors.push(adjustColor(baseColor, i, count));
-  }
-  return colors;
-}
-
-// 调整颜色亮度
-function adjustColor(hex, index, total) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
+  const legend = document.getElementById('subtype-legend');
+  const title = document.getElementById('subtype-title');
   
-  const factor = 1 - (index * 0.15);
-  const newR = Math.round(Math.min(255, r * factor + (255 - r * factor) * 0.3));
-  const newG = Math.round(Math.min(255, g * factor + (255 - g * factor) * 0.3));
-  const newB = Math.round(Math.min(255, b * factor + (255 - b * factor) * 0.3));
+  title.textContent = `${category}明细`;
   
-  return `rgb(${newR}, ${newG}, ${newB})`;
-}
 
 // 加载资产列表
 async function loadAssets() {
