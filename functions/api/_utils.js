@@ -85,7 +85,7 @@ export async function getUserId(request) {
 // 获取数据库
 export async function getDB(env) {
   const data = await env.FAMILYASSETS_KV.get('db', 'json');
-  return data || { users: [], assets: [], nextUserId: 1, nextAssetId: 1 };
+  return data || { users: [], assets: [], goals: [], nextUserId: 1, nextAssetId: 1, nextGoalId: 1 };
 }
 
 // 保存数据库

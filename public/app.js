@@ -147,6 +147,7 @@ function initEventListeners() {
       
       if (btn.dataset.view === 'dashboard') loadDashboard();
       if (btn.dataset.view === 'assets') loadAssets();
+      if (btn.dataset.view === 'goals') loadGoals();
     });
   });
 
@@ -215,6 +216,44 @@ function initEventListeners() {
       closeAssetModal();
       loadAssets();
       loadDashboard();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
+  // 添加目标按钮
+  document.getElementById('add-goal-btn').addEventListener('click', () => {
+    openGoalModal();
+  });
+
+  // 目标取消按钮
+  document.getElementById('goal-cancel-btn').addEventListener('click', () => {
+    closeGoalModal();
+  });
+
+  // 目标表单提交
+  document.getElementById('goal-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('goal-id').value;
+    const data = {
+      name: document.getElementById('goal-name').value,
+      amount: parseFloat(document.getElementById('goal-amount').value),
+      description: document.getElementById('goal-description').value
+    };
+    try {
+      const url = id ? `${API_BASE}/goals/${id}` : `${API_BASE}/goals`;
+      const method = id ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+      closeGoalModal();
+      loadGoals();
     } catch (err) {
       alert(err.message);
     }
@@ -690,4 +729,88 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// ── 目标管理 ──────────────────────────────────
+
+async function loadGoals() {
+  try {
+    const res = await fetch(`${API_BASE}/goals`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const goals = await res.json();
+    const list = document.getElementById('goals-list');
+    if (goals.length === 0) {
+      list.innerHTML = '<div class="empty-message">暂无目标，点击"添加目标"开始记录</div>';
+    } else {
+      list.innerHTML = goals.map(goal => `
+        <div class="asset-item">
+          <div class="asset-info">
+            <h4>${escapeHtml(goal.name)}</h4>
+            ${goal.description ? `<span>${escapeHtml(goal.description)}</span>` : ''}
+          </div>
+          <div class="asset-amount" style="color: var(--accent)">
+            ¥${formatNumber(goal.amount)}
+          </div>
+          <div class="asset-actions">
+            <button class="edit-btn" onclick="editGoal(${goal.id})">编辑</button>
+            <button class="delete-btn" onclick="deleteGoal(${goal.id})">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('加载目标失败:', err);
+  }
+}
+
+function openGoalModal(goal = null) {
+  const modal = document.getElementById('goal-modal');
+  const title = document.getElementById('goal-modal-title');
+  if (goal) {
+    title.textContent = '编辑目标';
+    document.getElementById('goal-id').value = goal.id;
+    document.getElementById('goal-name').value = goal.name;
+    document.getElementById('goal-amount').value = goal.amount;
+    document.getElementById('goal-description').value = goal.description || '';
+  } else {
+    title.textContent = '添加目标';
+    document.getElementById('goal-form').reset();
+    document.getElementById('goal-id').value = '';
+  }
+  modal.classList.remove('hidden');
+}
+
+function closeGoalModal() {
+  document.getElementById('goal-modal').classList.add('hidden');
+}
+
+async function editGoal(id) {
+  try {
+    const res = await fetch(`${API_BASE}/goals`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const goals = await res.json();
+    const goal = goals.find(g => g.id === id);
+    if (goal) openGoalModal(goal);
+  } catch (err) {
+    console.error('获取目标失败:', err);
+  }
+}
+
+async function deleteGoal(id) {
+  if (!confirm('确定要删除这个目标吗？')) return;
+  try {
+    const res = await fetch(`${API_BASE}/goals/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error);
+    }
+    loadGoals();
+  } catch (err) {
+    alert(err.message);
+  }
 }

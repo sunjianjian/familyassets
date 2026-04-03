@@ -45,8 +45,9 @@
       </header>
 
       <nav class="main-nav">
-        <button class="nav-btn active" data-view="dashboard">资产概览</button>
-        <button class="nav-btn" data-view="assets">资产明细</button>
+        <button class="nav-btn active" data-view="dashboard">总览</button>
+        <button class="nav-btn" data-view="assets">资产管理</button>
+        <button class="nav-btn" data-view="goals">目标管理</button>
       </nav>
 
       <!-- 资产概览 -->
@@ -83,13 +84,22 @@
         </div>
       </div>
 
-      <!-- 资产明细 -->
+      <!-- 资产管理 -->
       <div id="assets-view" class="view hidden">
         <div class="assets-header">
           <h2>资产列表</h2>
           <button id="add-asset-btn" class="btn-primary">添加资产</button>
         </div>
         <div id="assets-list"></div>
+      </div>
+
+      <!-- 目标管理 -->
+      <div id="goals-view" class="view hidden">
+        <div class="assets-header">
+          <h2>目标列表</h2>
+          <button id="add-goal-btn" class="btn-primary">添加目标</button>
+        </div>
+        <div id="goals-list"></div>
       </div>
 
       <!-- 添加/编辑资产弹窗 -->
@@ -137,6 +147,32 @@
             </div>
             <div class="form-actions">
               <button type="button" id="cancel-btn">取消</button>
+              <button type="submit" class="btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 添加/编辑目标弹窗 -->
+      <div id="goal-modal" class="modal hidden">
+        <div class="modal-content">
+          <h3 id="goal-modal-title">添加目标</h3>
+          <form id="goal-form">
+            <input type="hidden" id="goal-id">
+            <div class="form-group">
+              <label>目标名称</label>
+              <input type="text" id="goal-name" required>
+            </div>
+            <div class="form-group">
+              <label>目标金额 (元)</label>
+              <input type="number" id="goal-amount" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label>备注</label>
+              <textarea id="goal-description"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" id="goal-cancel-btn">取消</button>
               <button type="submit" class="btn-primary">保存</button>
             </div>
           </form>
