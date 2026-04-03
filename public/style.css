@@ -693,8 +693,8 @@ header h1 {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
@@ -702,11 +702,13 @@ header h1 {
 /* 图例在左（order:-1），SVG 在右（默认 order:0） */
 .pie-chart-container .chart-legend {
   order: -1;
-  flex-shrink: 0;
+  display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: flex-start;
+  flex-shrink: 0;
+  gap: 4px;
 }
 
 .pie-chart {
