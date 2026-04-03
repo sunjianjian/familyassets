@@ -271,21 +271,19 @@ function showMainPage() {
 // 加载概览
 async function loadDashboard() {
   try {
-    const [statsRes, assetsRes] = await Promise.all([
-      fetch(`${API_BASE}/statistics`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      }),
-      fetch(`${API_BASE}/assets`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+    const [statsRes, assetsRes, goalsRes] = await Promise.all([
+      fetch(`${API_BASE}/statistics`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_BASE}/assets`,    { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`${API_BASE}/goals`,     { headers: { 'Authorization': `Bearer ${token}` } })
     ]);
     
-    const stats = await statsRes.json();
+    const stats  = await statsRes.json();
     const assets = await assetsRes.json();
+    const goals  = await goalsRes.json();
     allAssets = assets;
     
     // 计算净资产
-    const totalAssets = assets.filter(a => a.category !== '负债').reduce((sum, a) => sum + a.amount, 0);
+    const totalAssets      = assets.filter(a => a.category !== '负债').reduce((sum, a) => sum + a.amount, 0);
     const totalLiabilities = assets.filter(a => a.category === '负债').reduce((sum, a) => sum + a.amount, 0);
     const netWorth = totalAssets - totalLiabilities;
 
@@ -303,6 +301,9 @@ async function loadDashboard() {
     
     // 渲染饼图
     renderCategoryPieChart(assets);
+
+    // 渲染目标达成率
+    renderGoalProgress(goals, netWorth);
     
     // 按一级分类 → 二级子类汇总
     const categoryOrder = ['现金', '固收', '权益', '另类', '负债'];
@@ -365,6 +366,40 @@ async function loadDashboard() {
   } catch (err) {
     console.error('加载概览失败:', err);
   }
+}
+
+// 渲染目标达成率
+function renderGoalProgress(goals, netWorth) {
+  const section = document.getElementById('goal-progress-section');
+  const listEl  = document.getElementById('goal-progress-list');
+
+  if (!goals || goals.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+
+  // 瀑布式分配：净资产依次满足各目标
+  let remaining = netWorth;
+  listEl.innerHTML = goals.map(goal => {
+    const pct = goal.amount > 0 ? Math.min(remaining / goal.amount, 1) : 1;
+    const pctDisplay = Math.round(pct * 100);
+    remaining = Math.max(remaining - goal.amount, 0);
+
+    const barColor = pct >= 1 ? 'var(--success)' : pct >= 0.5 ? 'var(--accent)' : '#f59e0b';
+    return `
+      <div class="goal-progress-item">
+        <div class="goal-progress-header">
+          <span class="goal-progress-name">${escapeHtml(goal.name)}</span>
+          <span class="goal-progress-pct" style="color:${barColor}">${pctDisplay}%</span>
+        </div>
+        <div class="goal-progress-bar-bg">
+          <div class="goal-progress-bar-fill" style="width:${pctDisplay}%;background:${barColor}"></div>
+        </div>
+        <div class="goal-progress-amount">目标 ¥${formatNumber(goal.amount)}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 // 渲染一级资产饼图
