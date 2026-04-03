@@ -688,22 +688,21 @@ header h1 {
   text-align: center;
 }
 
-/* pie chart 与图例：改为上下列布局 */
+/* pie chart 与图例：图例在左，饼图在右 */
 .pie-chart-container {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 16px;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
 }
 
 /* 图例在左（order:-1），SVG 在右（默认 order:0） */
 .pie-chart-container .chart-legend {
   order: -1;
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
   flex-direction: column;
   flex-wrap: nowrap;
   justify-content: center;
@@ -711,8 +710,8 @@ header h1 {
 }
 
 .pie-chart {
-  width: 120px;
-  height: 120px;
+  width: 90px;
+  height: 90px;
   transform: rotate(-90deg);
   flex-shrink: 0;
 }
@@ -750,6 +749,7 @@ header h1 {
   padding: 2px 4px;
   border-radius: 4px;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .legend-item:hover {
