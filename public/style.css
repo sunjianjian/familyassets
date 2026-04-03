@@ -258,7 +258,7 @@ header h1 {
   min-width: 130px;
 }
 
-.overview-left h3 {
+.overview-title {
   font-size: 26px;
   font-weight: 700;
   background: linear-gradient(135deg, var(--success) 0%, #16a34a 100%);
