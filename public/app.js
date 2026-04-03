@@ -621,7 +621,7 @@ async function deleteAsset(id) {
 
 // 工具函数
 function formatNumber(num) {
-  return Number(num).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return Math.round(Number(num));
 }
 
 function escapeHtml(str) {
