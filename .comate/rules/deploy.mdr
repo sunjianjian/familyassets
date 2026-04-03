@@ -10,7 +10,7 @@ alwaysApply: true
 ## 部署命令
 
 ```bash
-export PATH=$HOME/.n/bin:$PATH && npx wrangler pages deploy ./public --project-name familyassets --commit-dirty=true
+export PATH=$HOME/.n/bin:$PATH && cd cloudflare && npx wrangler pages deploy ../public --project-name familyassets --commit-dirty=true
 ```
 
 ## 注意事项

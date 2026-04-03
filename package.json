@@ -2,10 +2,10 @@
   "name": "family-assets-management",
   "version": "1.0.0",
   "description": "家庭资产管理系统",
-  "main": "local.js",
+  "main": "local/index.js",
   "scripts": {
-    "start": "node local.js",
-    "dev": "node local.js"
+    "start": "node local/index.js",
+    "dev": "node local/index.js"
   },
   "dependencies": {
     "@vercel/kv": "^2.0.0",

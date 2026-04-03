@@ -1,6 +1,6 @@
 name = "familyassets"
 compatibility_date = "2024-01-01"
-pages_build_output_dir = "./public"
+pages_build_output_dir = "../public"
 
 [[kv_namespaces]]
 binding = "FAMILYASSETS_KV"
