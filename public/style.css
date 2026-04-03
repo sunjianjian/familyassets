@@ -235,6 +235,52 @@ header h1 {
 }
 
 /* 统计卡片 */
+/* 融合卡片：净资产 + 饼图 */
+.overview-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 24px;
+  margin-bottom: 20px;
+  gap: 24px;
+  transition: all 0.3s ease;
+}
+
+.overview-card:hover {
+  border-color: var(--accent);
+}
+
+.overview-left {
+  flex: 0 0 auto;
+  min-width: 130px;
+}
+
+.overview-left h3 {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.overview-left p {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--success) 0%, #16a34a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.overview-right {
+  flex: 1;
+  min-width: 0;
+}
+
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -555,9 +601,15 @@ header h1 {
 
 .pie-chart-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+}
+
+.pie-chart-container .chart-legend {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .pie-chart {
@@ -797,6 +849,24 @@ header h1 {
     font-size: 24px;
   }
 
+  .overview-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .overview-left p {
+    font-size: 24px;
+  }
+
+  .overview-right {
+    width: 100%;
+  }
+
+  .pie-chart-container {
+    width: 100%;
+  }
+
   .charts-section {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -807,8 +877,8 @@ header h1 {
   }
 
   .pie-chart {
-    width: 140px;
-    height: 140px;
+    width: 130px;
+    height: 130px;
   }
 
   .assets-header {
