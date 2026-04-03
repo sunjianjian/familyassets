@@ -821,13 +821,19 @@ header h1 {
 .drag-handle {
   display: flex;
   align-items: center;
-  padding: 0 10px 0 0;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  align-self: stretch;   /* 撑满整个卡片高度 */
+  margin-right: 4px;
   color: var(--text-muted);
   cursor: grab;
   opacity: 0.35;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 18px;
   transition: opacity 0.2s;
 }
 
@@ -837,6 +843,17 @@ header h1 {
 
 .drag-handle:active {
   cursor: grabbing;
+  opacity: 0.9;
+}
+
+/* 手机端目标项：禁止 wrap，确保手柄始终在左侧 */
+.goal-item {
+  flex-wrap: nowrap !important;
+}
+
+.goal-item .asset-info {
+  flex: 1 1 auto !important;
+  min-width: 0;
 }
 
 .goal-item.dragging {

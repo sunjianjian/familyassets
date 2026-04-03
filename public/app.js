@@ -769,7 +769,45 @@ async function loadGoals() {
 function initGoalDnD(list) {
   let dragSrc = null;
 
+  async function saveOrder() {
+    const newOrder = [...list.querySelectorAll('.goal-item')].map(el => parseInt(el.dataset.id));
+    try {
+      await fetch(`${API_BASE}/goals/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ ids: newOrder })
+      });
+    } catch (err) {
+      console.error('保存排序失败:', err);
+    }
+  }
+
+  function clearDragState() {
+    list.querySelectorAll('.goal-item').forEach(i => {
+      i.classList.remove('dragging', 'drag-over');
+    });
+    dragSrc = null;
+  }
+
+  function insertItem(src, target) {
+    if (!src || !target || src === target) return;
+    const items = [...list.querySelectorAll('.goal-item')];
+    const srcIdx = items.indexOf(src);
+    const dstIdx = items.indexOf(target);
+    if (srcIdx < dstIdx) target.after(src);
+    else target.before(src);
+  }
+
   list.querySelectorAll('.goal-item').forEach(item => {
+    const handle = item.querySelector('.drag-handle');
+
+    // ── 桌面端 DnD ─────────────────────────
+    item.setAttribute('draggable', 'true');
+
+    handle.addEventListener('mousedown', () => {
+      item.setAttribute('draggable', 'true');
+    });
+
     item.addEventListener('dragstart', e => {
       dragSrc = item;
       item.classList.add('dragging');
@@ -777,13 +815,11 @@ function initGoalDnD(list) {
     });
 
     item.addEventListener('dragend', () => {
-      item.classList.remove('dragging');
-      list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
+      clearDragState();
     });
 
     item.addEventListener('dragover', e => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
       if (item !== dragSrc) {
         list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
         item.classList.add('drag-over');
@@ -794,29 +830,48 @@ function initGoalDnD(list) {
       e.preventDefault();
       if (!dragSrc || dragSrc === item) return;
       item.classList.remove('drag-over');
-
-      // 重排 DOM
-      const items = [...list.querySelectorAll('.goal-item')];
-      const srcIdx = items.indexOf(dragSrc);
-      const dstIdx = items.indexOf(item);
-      if (srcIdx < dstIdx) {
-        item.after(dragSrc);
-      } else {
-        item.before(dragSrc);
-      }
-
-      // 提交新顺序到后端
-      const newOrder = [...list.querySelectorAll('.goal-item')].map(el => parseInt(el.dataset.id));
-      try {
-        await fetch(`${API_BASE}/goals/reorder`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ ids: newOrder })
-        });
-      } catch (err) {
-        console.error('保存排序失败:', err);
-      }
+      insertItem(dragSrc, item);
+      clearDragState();
+      await saveOrder();
     });
+
+    // ── 移动端 Touch DnD ───────────────────
+    handle.addEventListener('contextmenu', e => e.preventDefault());
+
+    handle.addEventListener('touchstart', e => {
+      e.preventDefault();           // 阻止长按弹出系统菜单
+      e.stopPropagation();
+      dragSrc = item;
+      item.classList.add('dragging');
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!dragSrc) return;
+      const touch = e.touches[0];
+      // 隐藏被拖项，以便 elementFromPoint 能命中下方元素
+      dragSrc.style.pointerEvents = 'none';
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      dragSrc.style.pointerEvents = '';
+      const target = el?.closest('.goal-item');
+      list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
+      if (target && target !== dragSrc) target.classList.add('drag-over');
+    }, { passive: false });
+
+    handle.addEventListener('touchend', async e => {
+      e.preventDefault();
+      if (!dragSrc) return;
+      const touch = e.changedTouches[0];
+      dragSrc.style.pointerEvents = 'none';
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      dragSrc.style.pointerEvents = '';
+      const target = el?.closest('.goal-item');
+      if (target && target !== dragSrc) {
+        insertItem(dragSrc, target);
+        await saveOrder();
+      }
+      clearDragState();
+    }, { passive: false });
   });
 }
 
