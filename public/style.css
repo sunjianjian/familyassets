@@ -691,18 +691,17 @@ header h1 {
 /* pie chart 与图例：改为上下列布局 */
 .pie-chart-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
   flex: 1;
 }
 
 .pie-chart-container .chart-legend {
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
   justify-content: center;
-  align-items: center;
-}
+  align-items: flex-start;
 }
 
 .pie-chart {
