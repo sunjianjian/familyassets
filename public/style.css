@@ -297,18 +297,20 @@ header h1 {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 20px;
+  overflow: hidden;
 }
 
 /* 目标达成进度区 */
 .goal-progress-section {
-  flex: 1;
-  min-width: 120px;
+  width: 50%;
+  flex-shrink: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   border-left: 1px solid var(--border-color);
   padding-left: 16px;
+  overflow: hidden;
 }
 
 /* 目标列表本身撑满自己的半区 */
@@ -695,8 +697,10 @@ header h1 {
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-  flex: 1;
-  min-width: 0;
+  width: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 图例在左（order:-1），SVG 在右（默认 order:0） */
