@@ -744,7 +744,8 @@ async function loadGoals() {
       list.innerHTML = '<div class="empty-message">暂无目标，点击"添加目标"开始记录</div>';
     } else {
       list.innerHTML = goals.map(goal => `
-        <div class="asset-item">
+        <div class="asset-item goal-item" draggable="true" data-id="${goal.id}">
+          <div class="drag-handle" title="拖拽排序">⠿</div>
           <div class="asset-info">
             <h4>${escapeHtml(goal.name)}</h4>
             ${goal.description ? `<span>${escapeHtml(goal.description)}</span>` : ''}
@@ -758,10 +759,65 @@ async function loadGoals() {
           </div>
         </div>
       `).join('');
+      initGoalDnD(list);
     }
   } catch (err) {
     console.error('加载目标失败:', err);
   }
+}
+
+function initGoalDnD(list) {
+  let dragSrc = null;
+
+  list.querySelectorAll('.goal-item').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      dragSrc = item;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
+    });
+
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (item !== dragSrc) {
+        list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
+        item.classList.add('drag-over');
+      }
+    });
+
+    item.addEventListener('drop', async e => {
+      e.preventDefault();
+      if (!dragSrc || dragSrc === item) return;
+      item.classList.remove('drag-over');
+
+      // 重排 DOM
+      const items = [...list.querySelectorAll('.goal-item')];
+      const srcIdx = items.indexOf(dragSrc);
+      const dstIdx = items.indexOf(item);
+      if (srcIdx < dstIdx) {
+        item.after(dragSrc);
+      } else {
+        item.before(dragSrc);
+      }
+
+      // 提交新顺序到后端
+      const newOrder = [...list.querySelectorAll('.goal-item')].map(el => parseInt(el.dataset.id));
+      try {
+        await fetch(`${API_BASE}/goals/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ ids: newOrder })
+        });
+      } catch (err) {
+        console.error('保存排序失败:', err);
+      }
+    });
+  });
 }
 
 function openGoalModal(goal = null) {
