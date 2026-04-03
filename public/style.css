@@ -268,7 +268,7 @@ header h1 {
 
 .overview-label-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
