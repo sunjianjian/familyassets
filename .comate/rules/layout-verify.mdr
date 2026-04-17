@@ -1,0 +1,50 @@
+<rule name="layout-verify.mdr" description="移动端布局自动化验证：每次修改布局后必须截图验证">
+
+# 布局修改验证规则
+
+每次修改 `public/style.css` 或 `public/index.html` 后，**必须**执行以下验证流程，通过后才可提交代码。
+
+## 验证步骤
+
+### 1. 运行截图脚本
+
+```bash
+npm run screenshot
+```
+
+脚本会在以下 4 个视口尺寸下截图，并自动检测元素重叠：
+
+| 文件名 | 尺寸 | 设备 |
+|--------|------|------|
+| `scripts/screenshots/mobile-375.png` | 375×812 | iPhone SE |
+| `scripts/screenshots/mobile-390.png` | 390×844 | iPhone 14 |
+| `scripts/screenshots/tablet-768.png` | 768×1024 | iPad |
+| `scripts/screenshots/desktop-1280.png` | 1280×800 | 桌面 |
+
+### 2. 读取截图进行视觉验证
+
+```
+read_file: scripts/screenshots/mobile-375.png
+read_file: scripts/screenshots/mobile-390.png
+read_file: scripts/screenshots/tablet-768.png
+read_file: scripts/screenshots/desktop-1280.png
+```
+
+### 3. 检查重点
+
+- [ ] 饼图（`.pie-chart-container`）未覆盖分类资产列表（`.recent-assets`）
+- [ ] 各视口下 `.overview-card` 布局正常（窄屏垂直排列，宽屏水平排列）
+- [ ] 模态框、导航栏在各尺寸下均可见且未溢出
+- [ ] 文字未被截断或遮挡
+
+### 4. 自动检测
+
+脚本退出码为 `1` 表示检测到重叠，需修复后重新运行。
+
+## 常见问题
+
+- **饼图重叠**：检查 `.overview-right` 在 `<400px` 时是否启用了 `flex-direction: column`
+- **SVG 尺寸异常**：检查 `.pie-chart` 的 `width`/`height` 在媒体查询中的值
+- **脚本报错 "找不到元素"**：可能 Mock 数据未正确触发渲染，检查 `scripts/screenshot.js` 中的 API 路由拦截
+
+</rule>

@@ -938,6 +938,34 @@ header h1 {
   }
 }
 
+/* 超窄屏（≤400px）：饼图与目标进度垂直排列，避免内容溢出或重叠 */
+@media (max-width: 400px) {
+  .overview-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pie-chart-container {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pie-chart {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+  }
+
+  .chart-legend {
+    flex: 1;
+  }
+
+  .goal-progress-section {
+    width: 100%;
+  }
+}
+
 /* ============ 滚动条 ============ */
 ::-webkit-scrollbar       { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-secondary); }

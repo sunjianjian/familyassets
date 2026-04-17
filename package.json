@@ -5,7 +5,8 @@
   "main": "local/index.js",
   "scripts": {
     "start": "node local/index.js",
-    "dev": "node local/index.js"
+    "dev": "node local/index.js",
+    "screenshot": "node scripts/screenshot.js"
   },
   "dependencies": {
     "@vercel/kv": "^2.0.0",
@@ -15,6 +16,7 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "playwright": "^1.44.0",
     "wrangler": "^4.75.0"
   }
 }
