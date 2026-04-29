@@ -10,7 +10,7 @@ alwaysApply: true
 ## 部署命令
 
 ```bash
-export PATH=$HOME/.n/bin:$PATH && cd cloudflare && npx wrangler pages deploy ../public --project-name familyassets --commit-dirty=true
+source ~/.nvm/nvm.sh && source /Users/sunjian/projects/familyassets/.cloudflare.env && cd /Users/sunjian/projects/familyassets/cloudflare && npx wrangler pages deploy ../public --project-name familyassets --branch main
 ```
 
 ## 注意事项
@@ -18,3 +18,5 @@ export PATH=$HOME/.n/bin:$PATH && cd cloudflare && npx wrangler pages deploy ../
 - 部署完成后访问地址：https://master.familyassets.pages.dev
 - macOS 12 环境下 wrangler 会有 Warning 提示，可忽略，不影响部署
 - 每次部署后同步提交 git，保持代码与线上一致
+- 用户说"部署"时，默认即为部署到 Cloudflare Pages，无需再确认
+- Cloudflare 凭证存储在本地 `.cloudflare.env`（已 gitignore）
