@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家庭资产管理系统 — 架构文档</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --bg-card:   #161b22;
+      --bg-code:   #1c2128;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --text-muted:#8b949e;
+      --accent:    #6366f1;
+      --accent2:   #818cf8;
+      --green:     #3fb950;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --link:      #58a6ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      display: flex;
+    }
+
+    /* ── 侧边导航 ── */
+    nav#sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px;
+      height: 100vh;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px 0 40px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    nav#sidebar .nav-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 20px 12px;
+    }
+
+    nav#sidebar a {
+      display: block;
+      padding: 6px 20px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+
+    nav#sidebar a:hover,
+    nav#sidebar a.active {
+      color: var(--text);
+      border-left-color: var(--accent);
+      background: rgba(99,102,241,.08);
+    }
+
+    nav#sidebar a.sub { padding-left: 32px; font-size: 12px; }
+
+    /* ── 主内容 ── */
+    main {
+      margin-left: 240px;
+      max-width: 900px;
+      padding: 48px 48px 80px;
+      width: 100%;
+    }
+
+    /* ── 标题 ── */
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent2), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin: 48px 0 20px;
+      scroll-margin-top: 24px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent2);
+      margin: 28px 0 12px;
+      scroll-margin-top: 24px;
+    }
+
+    h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin: 20px 0 8px;
+    }
+
+    /* ── 引用块 ── */
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 4px 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin: 8px 0 24px;
+    }
+
+    /* ── 段落与列表 ── */
+    p { margin: 10px 0; }
+
+    ul, ol {
+      padding-left: 24px;
+      margin: 10px 0;
+    }
+
+    li { margin: 4px 0; }
+
+    /* ── 行内代码 ── */
+    code {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      color: #f0883e;
+    }
+
+    /* ── 代码块 ── */
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #cdd9e5;
+      font-size: 13px;
+    }
+
+    /* ── 分隔线 ── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 40px 0;
+    }
+
+    /* ── 表格 ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--bg-code);
+      color: var(--text);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+    }
+
+    td {
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+    tr:hover td { background: rgba(99,102,241,.06); }
+
+    /* ── Mermaid 图容器 ── */
+    .mermaid {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin: 20px 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    /* ── 目录 (TOC) ── */
+    .toc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 20px 0 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 6px 24px;
+    }
+
+    .toc-card a {
+      color: var(--link);
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 0;
+    }
+
+    .toc-card a:hover { text-decoration: underline; }
+
+    .toc-card a::before {
+      content: "#";
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* ── 徽章 ── */
+    .badge {
+      display: inline-block;
+      background: rgba(99,102,241,.18);
+      color: var(--accent2);
+      border: 1px solid rgba(99,102,241,.35);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── 响应式 ── */
+    @media (max-width: 900px) {
+      nav#sidebar { display: none; }
+      main { margin-left: 0; padding: 24px 20px 60px; }
+    }
+
+    /* ── 滚动条 ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- 侧边导航 -->
+<nav id="sidebar">
+  <div class="nav-title">架构文档</div>
+  <a href="#overview">1. 项目概述</a>
+  <a href="#stack">2. 技术栈</a>
+  <a class="sub" href="#stack">前端：语言 / 协议</a>
+  <a class="sub" href="#stack">后端：语言 / 协议 / 运行时 / 库</a>
+  <a href="#structure">3. 目录结构</a>
+  <a href="#frontend">4. 前端架构</a>
+  <a class="sub" href="#frontend-layout">4.1 页面结构</a>
+  <a class="sub" href="#frontend-state">4.2 状态管理</a>
+  <a class="sub" href="#frontend-functions">4.3 关键函数</a>
+  <a class="sub" href="#frontend-responsive">4.4 响应式断点</a>
+  <a href="#backend">5. 后端架构</a>
+  <a class="sub" href="#backend-layers">5.1 分层设计</a>
+  <a class="sub" href="#backend-auth">5.2 认证流程</a>
+  <a href="#api">6. API 接口清单</a>
+  <a href="#datamodel">7. 数据模型</a>
+  <a href="#storage">8. 存储层</a>
+  <a href="#deploy">9. 部署架构</a>
+  <a href="#devtools">10. 开发工具</a>
+</nav>
+
+<!-- 主内容 -->
+<main>
+
+  <h1>家庭资产管理系统 — 架构文档</h1>
+  <blockquote>更新日期：2026-05-08</blockquote>
+
+  <!-- 目录 -->
+  <div class="toc-card">
+    <a href="#overview">项目概述</a>
+    <a href="#stack">技术栈</a>
+    <a href="#structure">目录结构</a>
+    <a href="#frontend">前端架构</a>
+    <a href="#backend">后端架构</a>
+    <a href="#api">API 接口清单</a>
+    <a href="#datamodel">数据模型</a>
+    <a href="#storage">存储层</a>
+    <a href="#deploy">部署架构</a>
+    <a href="#devtools">开发工具</a>
+  </div>
+
+  <hr>
+
+  <!-- 1. 项目概述 -->
+  <h2 id="overview">1. 项目概述</h2>
+  <p>家庭资产管理系统是一个多人账户的个人财务追踪工具，支持资产录入、分类统计、理财目标管理等功能。</p>
+  <p>核心特性：</p>
+  <ul>
+    <li>多用户 JWT 鉴权，数据完全隔离</li>
+    <li>资产按「现金 / 固收 / 权益 / 另类 / 负债」五大类管理</li>
+    <li>首页 SVG 饼图可视化资产配置</li>
+    <li>理财目标进度追踪（支持拖拽排序）</li>
+    <li>三端同构后端逻辑：本地 / Vercel / Cloudflare Pages 均可部署</li>
+  </ul>
+
+  <h3>系统整体架构</h3>
+  <div class="mermaid">
+graph TD
+    Browser["浏览器 (SPA)"]
+
+    subgraph frontend ["前端 public/"]
+        HTML["index.html"]
+        JS["app.js"]
+        CSS["style.css"]
+    end
+
+    subgraph cfPlatform ["Cloudflare Pages (生产)"]
+        CDN["CDN 边缘节点 (静态文件)"]
+        Functions["Pages Functions (Serverless API)"]
+        CFKV["Cloudflare KV (持久化)"]
+    end
+
+    subgraph localPlatform ["本地开发"]
+        Express["Express 服务器"]
+        SharedServer["server/ 共享后端逻辑"]
+        JsonFile["data/database.json"]
+    end
+
+    subgraph vercelPlatform ["Vercel (备用)"]
+        VercelExpress["Express on Vercel"]
+        VercelKV["Vercel KV (Redis)"]
+    end
+
+    Browser -->|"请求静态文件"| CDN
+    Browser -->|"API /api/*"| Functions
+    Browser -->|"本地开发"| Express
+    Functions --> CFKV
+    Express --> SharedServer
+    SharedServer --> JsonFile
+    VercelExpress --> VercelKV
+  </div>
+
+  <hr>
+
+  <!-- 2. 技术栈 -->
+  <h2 id="stack">2. 技术栈</h2>
+
+  <h3>前端</h3>
+
+  <h4>编程语言</h4>
+  <table>
+    <thead><tr><th>语言</th><th>规范</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>JavaScript</td><td>ES2020+，浏览器原生脚本</td><td>无框架，无构建步骤，无 TypeScript</td></tr>
+      <tr><td>HTML</td><td>HTML5</td><td>单页面标记，<code>index.html</code> 承载完整 SPA 结构</td></tr>
+      <tr><td>CSS</td><td>CSS3 + 自定义属性</td><td>暗色设计系统，无预处理器（Sass/Less）</td></tr>
+    </tbody>
+  </table>
+
+  <h4>基础协议与规范</h4>
+  <table>
+    <thead><tr><th>协议/规范</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>Fetch API</td><td>原生 HTTP 请求，封装为 <code>authFetch</code> 统一携带 JWT</td></tr>
+      <tr><td>Web Storage API</td><td><code>localStorage</code> 持久化 token 与用户名</td></tr>
+      <tr><td>SVG 1.1</td><td>手绘饼图，原生 <code>&lt;path&gt;</code> 路径计算，不依赖图表库</td></tr>
+      <tr><td>HTML5 Drag and Drop API</td><td>桌面端目标拖拽排序</td></tr>
+      <tr><td>Touch Events</td><td>移动端目标拖拽排序</td></tr>
+    </tbody>
+  </table>
+
+  <hr style="border-color:rgba(48,54,61,.5);margin:24px 0">
+
+  <h3>后端</h3>
+
+  <h4>编程语言</h4>
+  <table>
+    <thead><tr><th>语言</th><th>规范</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>JavaScript</td><td>Node.js CommonJS（<code>require</code>）</td><td>前后端同一语言，无 TypeScript</td></tr>
+    </tbody>
+  </table>
+
+  <h4>基础协议与规范</h4>
+  <table>
+    <thead><tr><th>协议/规范</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>HTTP/HTTPS + REST</td><td>API 设计风格，<code>/api/*</code> 路径规范</td></tr>
+      <tr><td>JWT（RFC 7519）</td><td>无状态鉴权令牌，<code>Authorization: Bearer</code> 头传递，有效期 7 天</td></tr>
+      <tr><td>bcrypt</td><td>密码哈希算法，salt rounds = 10</td></tr>
+    </tbody>
+  </table>
+
+  <h4>运行时与平台</h4>
+  <table>
+    <thead><tr><th>运行时</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>Node.js v20+</td><td>本地开发与 Vercel 部署的服务端运行时</td></tr>
+      <tr><td>Cloudflare Pages Functions</td><td>生产 Serverless 边缘运行时，ES Module 格式</td></tr>
+      <tr><td>Vercel Serverless</td><td>备用部署平台，复用同一 Express 应用</td></tr>
+    </tbody>
+  </table>
+
+  <h4>核心依赖库</h4>
+  <table>
+    <thead><tr><th>库</th><th>版本</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td>express</td><td>^4.18</td><td>HTTP 路由框架（本地/Vercel）</td></tr>
+      <tr><td>jsonwebtoken</td><td>^9.0</td><td>JWT 签发与校验</td></tr>
+      <tr><td>bcryptjs</td><td>^2.4</td><td>bcrypt 算法的纯 JS 实现</td></tr>
+      <tr><td>@vercel/kv</td><td>^2.0</td><td>Vercel Redis 兼容 KV 客户端</td></tr>
+      <tr><td>Cloudflare KV</td><td>—</td><td>生产持久化存储，binding: <code>FAMILYASSETS_KV</code></td></tr>
+    </tbody>
+  </table>
+
+  <hr style="border-color:rgba(48,54,61,.5);margin:24px 0">
+
+  <h3>开发工具</h3>
+  <table>
+    <thead><tr><th>工具</th><th>版本</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td>Playwright</td><td>^1.44</td><td>多视口截图 + 布局重叠自动检测</td></tr>
+      <tr><td>Wrangler</td><td>^4.75</td><td>Cloudflare Pages 部署 CLI</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 3. 目录结构 -->
+  <h2 id="structure">3. 目录结构</h2>
+  <pre><code>familyassets/
+├── public/                    # 前端静态资源（部署到 CDN）
+│   ├── index.html             # 单页应用 HTML（181 行）
+│   ├── app.js                 # 全部前端逻辑（696 行）
+│   └── style.css              # 设计系统 + 响应式样式（~980 行）
+│
+├── server/                    # 共享后端逻辑（平台无关）
+│   ├── app.js                 # Express App 工厂函数
+│   ├── middleware/auth.js     # JWT 校验中间件
+│   ├── routes/auth.js         # 注册 / 登录路由
+│   ├── routes/assets.js       # 资产 CRUD + 统计路由
+│   └── storage/
+│       ├── index.js           # 存储抽象层（setStorage / getDB / saveDB）
+│       ├── jsonStorage.js     # 本地 JSON 文件存储
+│       └── kvStorage.js       # Vercel KV 存储适配
+│
+├── cloudflare/                # Cloudflare Pages 部署包
+│   ├── wrangler.toml          # 项目名: familyassets，KV 绑定配置
+│   └── functions/api/
+│       ├── _middleware.js     # CORS + 路由前置处理
+│       ├── _utils.js          # JWT / 加密工具
+│       ├── login.js / register.js / statistics.js
+│       ├── assets/index.js    # GET/POST /api/assets
+│       ├── assets/[id].js     # PUT/DELETE /api/assets/:id
+│       ├── goals/index.js     # GET/POST /api/goals
+│       ├── goals/[id].js      # PUT/DELETE /api/goals/:id
+│       └── goals/reorder.js   # POST /api/goals/reorder
+│
+├── local/index.js             # 本地开发入口（Express + JSON 文件存储）
+├── vercel/index.js            # Vercel 部署入口（Express + KV 存储）
+├── scripts/screenshot.js      # Playwright 截图与重叠检测脚本
+├── .comate/rules/             # AI 编程规范（Comate 自动加载）
+├── data/database.json         # 本地数据文件（gitignore）
+└── package.json</code></pre>
+
+  <hr>
+
+  <!-- 4. 前端架构 -->
+  <h2 id="frontend">4. 前端架构</h2>
+
+  <h3 id="frontend-layout">4.1 页面结构</h3>
+  <p>单页应用，通过 <code>.hidden</code> 类切换视图：</p>
+  <div class="mermaid">
+graph TD
+    Root["index.html"]
+    Root --> AuthPage["#auth-page (未登录)"]
+    Root --> MainPage["#main-page (已登录)"]
+
+    AuthPage --> LoginForm["#login-form 登录表单"]
+    AuthPage --> RegisterForm["#register-form 注册表单"]
+
+    MainPage --> Header["header 标题 + 用户 + 退出"]
+    MainPage --> Nav[".main-nav 导航栏"]
+    MainPage --> DashView["#dashboard-view 总览"]
+    MainPage --> AssetsView["#assets-view 资产管理"]
+    MainPage --> GoalsView["#goals-view 目标管理"]
+    MainPage --> AssetModal["#asset-modal 资产弹窗"]
+    MainPage --> GoalModal["#goal-modal 目标弹窗"]
+
+    DashView --> OverviewCard[".overview-card"]
+    DashView --> RecentAssets[".recent-assets 分类资产列表"]
+
+    OverviewCard --> OverviewLeft[".overview-left 净资产 + 年收益"]
+    OverviewCard --> OverviewRight[".overview-right"]
+    OverviewRight --> PieChart[".pie-chart-container SVG 饼图"]
+    OverviewRight --> GoalProgress[".goal-progress-section 目标进度条"]
+  </div>
+
+  <h3 id="frontend-state">4.2 状态管理</h3>
+  <p>无框架状态管理，使用模块级变量：</p>
+  <pre><code class="language-js">let token       = localStorage.getItem('token');      // JWT
+let currentUser = localStorage.getItem('username');   // 用户名
+let allAssets   = [];   // 资产缓存（loadDashboard 后填充）
+let allGoals    = [];   // 目标缓存（loadDashboard 后填充）</code></pre>
+
+  <h3 id="frontend-functions">4.3 关键函数</h3>
+  <table>
+    <thead><tr><th>函数</th><th>作用</th><th>位置</th></tr></thead>
+    <tbody>
+      <tr><td><code>authFetch(url, options)</code></td><td>统一附加 Authorization 头</td><td>app.js:47</td></tr>
+      <tr><td><code>showMainPage()</code></td><td>切换到主页 + 触发 loadDashboard</td><td>app.js:240</td></tr>
+      <tr><td><code>loadDashboard()</code></td><td>并发拉取资产+目标，渲染总览</td><td>app.js:248</td></tr>
+      <tr><td><code>renderCategoryPieChart(assets)</code></td><td>SVG 路径计算，绘制饼图</td><td>app.js:373</td></tr>
+      <tr><td><code>renderGoalProgress(goals, netWorth)</code></td><td>计算目标完成度，渲染进度条</td><td>app.js:341</td></tr>
+      <tr><td><code>loadAssets()</code></td><td>渲染资产管理列表</td><td>app.js:434</td></tr>
+      <tr><td><code>loadGoals()</code></td><td>渲染目标列表</td><td>app.js:530</td></tr>
+      <tr><td><code>initGoalDnD(list)</code></td><td>桌面 HTML5 拖拽 + 移动端 Touch 拖拽</td><td>app.js:563</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="frontend-responsive">4.4 响应式断点</h3>
+  <table>
+    <thead><tr><th>断点</th><th>主要变化</th></tr></thead>
+    <tbody>
+      <tr><td><code>≤ 768px</code></td><td><code>.overview-card</code> 改为垂直排列；资产列表换行显示</td></tr>
+      <tr><td><code>≤ 480px</code></td><td>按钮缩小间距</td></tr>
+      <tr><td><code>≤ 400px</code></td><td><code>.overview-right</code> 强制列布局，防止饼图与目标进度重叠</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.5 资产分类颜色</h3>
+  <table>
+    <thead><tr><th>分类</th><th>颜色值</th><th>视觉</th></tr></thead>
+    <tbody>
+      <tr><td>现金</td><td><code>#22c55e</code></td><td><span style="display:inline-block;width:14px;height:14px;background:#22c55e;border-radius:3px;vertical-align:middle;margin-right:4px"></span>绿色</td></tr>
+      <tr><td>固收</td><td><code>#3b82f6</code></td><td><span style="display:inline-block;width:14px;height:14px;background:#3b82f6;border-radius:3px;vertical-align:middle;margin-right:4px"></span>蓝色</td></tr>
+      <tr><td>权益</td><td><code>#f59e0b</code></td><td><span style="display:inline-block;width:14px;height:14px;background:#f59e0b;border-radius:3px;vertical-align:middle;margin-right:4px"></span>琥珀色</td></tr>
+      <tr><td>另类</td><td><code>#a855f7</code></td><td><span style="display:inline-block;width:14px;height:14px;background:#a855f7;border-radius:3px;vertical-align:middle;margin-right:4px"></span>紫色</td></tr>
+      <tr><td>负债</td><td><code>#ef4444</code></td><td><span style="display:inline-block;width:14px;height:14px;background:#ef4444;border-radius:3px;vertical-align:middle;margin-right:4px"></span>红色</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 5. 后端架构 -->
+  <h2 id="backend">5. 后端架构</h2>
+
+  <h3 id="backend-layers">5.1 分层设计</h3>
+  <div class="mermaid">
+graph TD
+    Request["HTTP 请求"]
+    Adapter["平台适配层\nlocal/index.js\nvercel/index.js\ncloudflare/_middleware.js"]
+    Router["路由层\nserver/routes/\ncloudflare/functions/api/"]
+    AuthMW["认证中间件\nserver/middleware/auth.js\njwt.verify → req.userId"]
+    StorageAbstract["存储抽象层\nserver/storage/index.js\ngetDB() / saveDB()"]
+    StorageImpl["存储实现\njsonStorage / kvStorage / CF KV"]
+
+    Request --> Adapter
+    Adapter --> Router
+    Router --> AuthMW
+    AuthMW --> StorageAbstract
+    StorageAbstract --> StorageImpl
+  </div>
+
+  <h3 id="backend-auth">5.2 认证流程</h3>
+  <div class="mermaid">
+sequenceDiagram
+    participant C as 浏览器客户端
+    participant S as 服务端
+
+    C->>S: POST /api/login (username, password)
+    S->>S: bcrypt.compare(password, hash)
+    S->>S: jwt.sign({userId}, SECRET, 7d)
+    S-->>C: {token, username}
+    C->>C: localStorage.setItem(token)
+
+    Note over C,S: 后续受保护请求
+
+    C->>S: GET /api/assets Authorization Bearer token
+    S->>S: jwt.verify(token) 解析 req.userId
+    S->>S: 过滤 user_id === req.userId
+    S-->>C: assets[]
+  </div>
+
+  <h3>5.3 Cloudflare Functions 说明</h3>
+  <p>Cloudflare 版本不使用 Express，每个文件导出 <code>onRequest(context)</code> 函数，依赖 <code>_utils.js</code> 实现 JWT 校验，直接读写 <code>context.env.FAMILYASSETS_KV</code>。</p>
+
+  <hr>
+
+  <!-- 6. API 接口清单 -->
+  <h2 id="api">6. API 接口清单</h2>
+  <p>所有接口均以 <code>/api</code> 为前缀，需要鉴权的接口须携带 <code>Authorization: Bearer &lt;token&gt;</code> 请求头。</p>
+
+  <h3>认证接口</h3>
+  <table>
+    <thead><tr><th>方法</th><th>路径</th><th>鉴权</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge">POST</span></td><td><code>/api/register</code></td><td>无</td><td>用户注册（密码 ≥ 6 位）</td></tr>
+      <tr><td><span class="badge">POST</span></td><td><code>/api/login</code></td><td>无</td><td>用户登录，返回 JWT token</td></tr>
+    </tbody>
+  </table>
+
+  <h3>资产接口</h3>
+  <table>
+    <thead><tr><th>方法</th><th>路径</th><th>鉴权</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border-color:rgba(63,185,80,.35)">GET</span></td><td><code>/api/assets</code></td><td>需要</td><td>获取当前用户全部资产（按创建时间倒序）</td></tr>
+      <tr><td><span class="badge">POST</span></td><td><code>/api/assets</code></td><td>需要</td><td>新增资产</td></tr>
+      <tr><td><span class="badge" style="background:rgba(210,153,34,.15);color:#d29922;border-color:rgba(210,153,34,.35)">PUT</span></td><td><code>/api/assets/:id</code></td><td>需要</td><td>更新资产</td></tr>
+      <tr><td><span class="badge" style="background:rgba(248,81,73,.15);color:#f85149;border-color:rgba(248,81,73,.35)">DELETE</span></td><td><code>/api/assets/:id</code></td><td>需要</td><td>删除资产</td></tr>
+      <tr><td><span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border-color:rgba(63,185,80,.35)">GET</span></td><td><code>/api/assets/statistics</code></td><td>需要</td><td>按类型汇总统计</td></tr>
+    </tbody>
+  </table>
+
+  <h3>目标接口 <span class="badge">仅 Cloudflare 版本</span></h3>
+  <table>
+    <thead><tr><th>方法</th><th>路径</th><th>鉴权</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border-color:rgba(63,185,80,.35)">GET</span></td><td><code>/api/goals</code></td><td>需要</td><td>获取目标列表（按 order 排序）</td></tr>
+      <tr><td><span class="badge">POST</span></td><td><code>/api/goals</code></td><td>需要</td><td>新增目标</td></tr>
+      <tr><td><span class="badge" style="background:rgba(210,153,34,.15);color:#d29922;border-color:rgba(210,153,34,.35)">PUT</span></td><td><code>/api/goals/:id</code></td><td>需要</td><td>更新目标</td></tr>
+      <tr><td><span class="badge" style="background:rgba(248,81,73,.15);color:#f85149;border-color:rgba(248,81,73,.35)">DELETE</span></td><td><code>/api/goals/:id</code></td><td>需要</td><td>删除目标</td></tr>
+      <tr><td><span class="badge">POST</span></td><td><code>/api/goals/reorder</code></td><td>需要</td><td>拖拽排序（提交新 order 数组）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>统计接口</h3>
+  <table>
+    <thead><tr><th>方法</th><th>路径</th><th>鉴权</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge" style="background:rgba(63,185,80,.15);color:#3fb950;border-color:rgba(63,185,80,.35)">GET</span></td><td><code>/api/statistics</code></td><td>需要</td><td>总资产、资产数量、分类统计</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 7. 数据模型 -->
+  <h2 id="datamodel">7. 数据模型</h2>
+
+  <h3>ER 图</h3>
+  <div class="mermaid">
+erDiagram
+    User {
+        int id PK
+        string username
+        string password
+        string created_at
+    }
+    Asset {
+        int id PK
+        int user_id FK
+        string name
+        string category
+        string type
+        float amount
+        float principal
+        float expectedReturn
+        string description
+        string created_at
+        string updated_at
+    }
+    Goal {
+        string id PK
+        int user_id FK
+        string name
+        float targetAmount
+        float currentAmount
+        string deadline
+        int order
+        string created_at
+    }
+
+    User ||--o{ Asset : "拥有"
+    User ||--o{ Goal : "设定"
+  </div>
+
+  <h3>Asset 字段说明</h3>
+  <ul>
+    <li><code>category</code>：五大分类之一（现金 / 固收 / 权益 / 另类 / 负债）</li>
+    <li><code>type</code>：细分类型（如「货币基金」「股票」「活期存款」）</li>
+    <li><code>amount</code>：当前市值，负债填负数</li>
+    <li><code>principal</code>：成本/本金（用于计算收益率）</li>
+    <li><code>expectedReturn</code>：预期年化收益率（%）</li>
+  </ul>
+
+  <h3>本地数据库结构（data/database.json）</h3>
+  <pre><code class="language-json">{
+  "users": [],
+  "assets": [],
+  "goals": [],
+  "nextUserId": 1,
+  "nextAssetId": 1
+}</code></pre>
+
+  <hr>
+
+  <!-- 8. 存储层 -->
+  <h2 id="storage">8. 存储层</h2>
+  <p>存储层通过依赖注入解耦，不同平台在启动时注入对应实现：</p>
+  <div class="mermaid">
+graph TD
+    Abstract["storage/index.js\nsetStorage / getDB / saveDB"]
+    JSON["jsonStorage.js\ndata/database.json\n本地开发"]
+    KV["kvStorage.js\nVercel KV / Redis\nVercel 部署"]
+    CFKV["context.env.FAMILYASSETS_KV\nCloudflare KV\n生产"]
+
+    LocalEntry["local/index.js"] -->|"setStorage(jsonStorage)"| Abstract
+    VercelEntry["vercel/index.js"] -->|"setStorage(kvStorage)"| Abstract
+    CFEntry["cloudflare/functions/api/"] -->|"直接调用"| CFKV
+
+    Abstract --> JSON
+    Abstract --> KV
+  </div>
+
+  <hr>
+
+  <!-- 9. 部署架构 -->
+  <h2 id="deploy">9. 部署架构</h2>
+
+  <h3>三端部署对比</h3>
+  <div class="mermaid">
+graph LR
+    subgraph prod ["生产环境 Cloudflare Pages"]
+        CDN["CDN 边缘\n静态文件"]
+        CF_Func["Pages Functions\nServerless"]
+        CF_KV["Cloudflare KV"]
+        CDN -->|"/api/* 请求"| CF_Func
+        CF_Func --> CF_KV
+    end
+
+    subgraph localEnv ["本地开发"]
+        LocalExpress["Express\nlocalhost:3000"]
+        LocalDB["data/database.json"]
+        LocalExpress --> LocalDB
+    end
+
+    subgraph vercel ["Vercel 备用"]
+        VercelApp["Express on Vercel"]
+        VercelKV2["Vercel KV"]
+        VercelApp --> VercelKV2
+    end
+
+    User["用户浏览器"] -->|"master.familyassets.pages.dev"| CDN
+    Dev["开发者"] -->|"http://localhost:3000"| LocalExpress
+  </div>
+
+  <h3>生产部署命令</h3>
+  <pre><code class="language-bash">export PATH=$HOME/.n/bin:$PATH
+cd cloudflare && npx wrangler pages deploy ../public \
+  --project-name familyassets \
+  --commit-dirty=true \
+  --commit-message="deploy latest"</code></pre>
+  <p>访问地址：<a href="https://master.familyassets.pages.dev" target="_blank">https://master.familyassets.pages.dev</a></p>
+
+  <h3>本地开发</h3>
+  <pre><code class="language-bash">npm start   # node local/index.js → http://localhost:3000</code></pre>
+
+  <hr>
+
+  <!-- 10. 开发工具 -->
+  <h2 id="devtools">10. 开发工具</h2>
+
+  <h3>布局验证脚本（scripts/screenshot.js）</h3>
+  <p>每次修改 <code>public/style.css</code> 或 <code>public/index.html</code> 后必须运行：</p>
+  <pre><code class="language-bash">npm run screenshot</code></pre>
+
+  <h4>验证工作流</h4>
+  <div class="mermaid">
+flowchart LR
+    Edit["修改 CSS / HTML"]
+    Screenshot["npm run screenshot\nPlaywright 截图"]
+    Check["重叠检测\ngetBoundingClientRect"]
+    ReadFile["read_file 查看截图\nAI 视觉确认"]
+    Pass{"全部通过?"}
+    Fix["定位并修复问题"]
+    Commit["git commit"]
+
+    Edit --> Screenshot
+    Screenshot --> Check
+    Check --> ReadFile
+    ReadFile --> Pass
+    Pass -->|"否"| Fix
+    Fix --> Edit
+    Pass -->|"是"| Commit
+  </div>
+
+  <h4>覆盖视口</h4>
+  <table>
+    <thead><tr><th>截图文件</th><th>尺寸</th><th>模拟设备</th></tr></thead>
+    <tbody>
+      <tr><td><code>mobile-375.png</code></td><td>375×812</td><td>iPhone SE</td></tr>
+      <tr><td><code>mobile-390.png</code></td><td>390×844</td><td>iPhone 14</td></tr>
+      <tr><td><code>tablet-768.png</code></td><td>768×1024</td><td>iPad</td></tr>
+      <tr><td><code>desktop-1280.png</code></td><td>1280×800</td><td>桌面</td></tr>
+    </tbody>
+  </table>
+
+  <p>退出码：<code>0</code> = 全部通过，<code>1</code> = 检测到重叠或脚本异常。</p>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      background:        '#161b22',
+      primaryColor:      '#1c2128',
+      primaryTextColor:  '#e6edf3',
+      primaryBorderColor:'#30363d',
+      lineColor:         '#8b949e',
+      secondaryColor:    '#1c2128',
+      tertiaryColor:     '#1c2128',
+      edgeLabelBackground:'#161b22',
+      clusterBkg:        '#1c2128',
+      clusterBorder:     '#30363d',
+      titleColor:        '#e6edf3',
+      nodeBorder:        '#6366f1',
+      mainBkg:           '#1c2128',
+      nodeTextColor:     '#e6edf3',
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+    sequence:  { actorMargin: 60, useMaxWidth: true },
+  });
+
+  // 侧边导航高亮
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const navLinks = document.querySelectorAll('#sidebar a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`#sidebar a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

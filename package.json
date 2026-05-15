@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node local/index.js",
     "dev": "node local/index.js",
-    "screenshot": "node scripts/screenshot.js"
+    "screenshot": "node scripts/screenshot.js",
+    "notify": "afplay scripts/bird.wav"
   },
   "dependencies": {
     "@vercel/kv": "^2.0.0",
