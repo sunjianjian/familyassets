@@ -1,29 +1,21 @@
 // API 配置
 const API_BASE = '/api';
 
-// 资产分类配置
-const ASSET_CATEGORIES = {
-  '现金': ['活期存款', '货币基金', '其他'],
-  '固收': ['定期存款', '银行理财', '住房公积金', '养老个人账户', '医保个人账户', 'P2P', '其他'],
-  '权益': ['股票', '基金', '其他'],
-  '另类': ['期权', '其他'],
-  '负债': ['信用卡', '花呗', '其他']
-};
+// 默认资产类别（接口未返回时兜底）
+const DEFAULT_CATEGORIES = [
+  { name: '现金', color: '#22c55e', isLiability: false, subs: ['活期存款', '货币基金', '其他'] },
+  { name: '固收', color: '#3b82f6', isLiability: false, subs: ['定期存款', '银行理财', '住房公积金', '养老个人账户', '医保个人账户', 'P2P', '其他'] },
+  { name: '权益', color: '#f59e0b', isLiability: false, subs: ['股票', '基金', '其他'] },
+  { name: '另类', color: '#a855f7', isLiability: false, subs: ['期权', '其他'] },
+  { name: '负债', color: '#ef4444', isLiability: true, subs: ['信用卡', '花呗', '其他'] }
+];
 
-// 分类颜色
-const CATEGORY_COLORS = {
-  '现金': '#22c55e',
-  '固收': '#3b82f6',
-  '权益': '#f59e0b',
-  '另类': '#a855f7',
-  '负债': '#ef4444'
-};
+// 未知类别的兜底颜色
+const FALLBACK_COLORS = ['#6366f1', '#14b8a6', '#ec4899', '#8b5cf6', '#0ea5e9', '#f97316', '#84cc16'];
 
-// 分类顺序（全局统一）
-const CATEGORY_ORDER = ['现金', '固收', '权益', '另类', '负债'];
-
-let allAssets = [];
-let allGoals  = [];
+let allAssets   = [];
+let allGoals    = [];
+let assetCategories = [];
 
 // 状态管理
 let token = localStorage.getItem('token');
@@ -142,6 +134,7 @@ function initEventListeners() {
       if (btn.dataset.view === 'dashboard') loadDashboard();
       if (btn.dataset.view === 'assets')    loadAssets();
       if (btn.dataset.view === 'goals')     loadGoals();
+      if (btn.dataset.view === 'categories') loadCategoriesView();
     });
   });
 
@@ -152,6 +145,13 @@ function initEventListeners() {
 
   // 添加资产按钮
   document.getElementById('add-asset-btn').addEventListener('click', () => openAssetModal());
+
+  // 类别管理
+  document.getElementById('add-category-btn').addEventListener('click', () => openCategoryModal());
+  document.getElementById('category-cancel-btn').addEventListener('click', () => closeCategoryModal());
+  document.getElementById('add-subtype-btn').addEventListener('click', () => appendSubtypeRow(''));
+  document.getElementById('category-form').addEventListener('submit', saveCategory);
+  document.getElementById('categories-list').addEventListener('click', handleCategoryListClick);
 
   // 取消按钮
   document.getElementById('cancel-btn').addEventListener('click', () => closeAssetModal());
@@ -223,17 +223,78 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// 填充子类 <select>
-function populateSubtypes(typeSelect, category) {
-  typeSelect.innerHTML = '<option value="">请选择子类</option>';
-  if (category && ASSET_CATEGORIES[category]) {
-    ASSET_CATEGORIES[category].forEach(subtype => {
-      const option = document.createElement('option');
-      option.value = subtype;
-      option.textContent = subtype;
-      typeSelect.appendChild(option);
-    });
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function safeColor(color) {
+  return /^#[0-9a-fA-F]{3,8}$/.test(String(color || '')) ? color : null;
+}
+
+// ── 资产类别配置 ─────────────────────────────────────
+function normalizeDefaultCategories() {
+  return DEFAULT_CATEGORIES.map((c, i) => ({ ...c, subs: [...c.subs], id: `default-${i}`, sort: i }));
+}
+
+async function loadCategories() {
+  try {
+    const res = await authFetch(`${API_BASE}/categories`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    assetCategories = Array.isArray(data) && data.length > 0 ? data : normalizeDefaultCategories();
+  } catch (err) {
+    console.error('加载类别失败:', err);
+    if (assetCategories.length === 0) assetCategories = normalizeDefaultCategories();
   }
+  renderAssetCategoryOptions();
+  return assetCategories;
+}
+
+function getCategoryConfig(name) {
+  return assetCategories.find(c => c.name === name);
+}
+
+function getCategoryColor(name) {
+  const cfg = getCategoryConfig(name);
+  const configured = cfg && safeColor(cfg.color);
+  if (configured) return configured;
+  const index = [...String(name)].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % FALLBACK_COLORS.length;
+  return FALLBACK_COLORS[index];
+}
+
+function getCategoryOrder(name) {
+  const index = assetCategories.findIndex(c => c.name === name);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function isLiabilityCategory(name) {
+  const cfg = getCategoryConfig(name);
+  return cfg ? !!cfg.isLiability : name === '负债';
+}
+
+function getSubtypes(name) {
+  const cfg = getCategoryConfig(name);
+  return cfg && Array.isArray(cfg.subs) ? cfg.subs : [];
+}
+
+// 填充资产弹窗中的类别下拉框
+function renderAssetCategoryOptions(selected = '') {
+  const select = document.getElementById('asset-category');
+  if (!select) return;
+  const names = assetCategories.map(c => c.name);
+  if (selected && !names.includes(selected)) names.push(selected);
+  select.innerHTML = '<option value="">请选择类型</option>' +
+    names.map(n => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join('');
+  select.value = selected;
+}
+
+// 填充子类 <select>，保留已有值（即使已被删除）
+function populateSubtypes(typeSelect, category, selected = '') {
+  const subs = getSubtypes(category);
+  if (selected && !subs.includes(selected)) subs.push(selected);
+  typeSelect.innerHTML = '<option value="">请选择子类</option>' +
+    subs.map(s => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('');
+  typeSelect.value = selected;
 }
 
 // ── 主页面 ───────────────────────────────────────────
@@ -241,7 +302,7 @@ function showMainPage() {
   authPage.classList.add('hidden');
   mainPage.classList.remove('hidden');
   currentUserSpan.textContent = currentUser;
-  loadDashboard();
+  loadCategories().then(() => loadDashboard());
 }
 
 // ── 总览 ─────────────────────────────────────────────
@@ -257,12 +318,12 @@ async function loadDashboard() {
     allGoals  = goals;
 
     // 净资产
-    const totalAssets      = assets.filter(a => a.category !== '负债').reduce((s, a) => s + a.amount, 0);
-    const totalLiabilities = assets.filter(a => a.category === '负债').reduce((s, a) => s + a.amount, 0);
+    const totalAssets      = assets.filter(a => !isLiabilityCategory(a.category)).reduce((s, a) => s + a.amount, 0);
+    const totalLiabilities = assets.filter(a => isLiabilityCategory(a.category)).reduce((s, a) => s + a.amount, 0);
     const netWorth = totalAssets - totalLiabilities;
 
     // 预期年收益
-    const nonLiability = assets.filter(a => a.category !== '负债');
+    const nonLiability = assets.filter(a => !isLiabilityCategory(a.category));
     const expectedAnnualReturn = nonLiability.reduce((sum, a) => {
       const principal = a.principal || a.amount;
       return sum + principal * (a.expectedReturn || 0) / 100;
@@ -298,39 +359,40 @@ async function loadDashboard() {
     }
 
     let html = '';
-    CATEGORY_ORDER.forEach(cat => {
-      if (!categoryMap[cat]) return;
-      const catData = categoryMap[cat];
-      const color = CATEGORY_COLORS[cat] || '#6366f1';
-      const isLiability = cat === '负债';
-      const amtColor = isLiability ? 'var(--danger)' : 'var(--success)';
+    Object.keys(categoryMap)
+      .sort((a, b) => getCategoryOrder(a) - getCategoryOrder(b))
+      .forEach(cat => {
+        const catData = categoryMap[cat];
+        const color = getCategoryColor(cat);
+        const isLiability = isLiabilityCategory(cat);
+        const amtColor = isLiability ? 'var(--danger)' : 'var(--success)';
 
-      html += `
-        <div class="category-header">
-          <span class="category-header-name" style="color:${color}">${cat}</span>
-          <span class="category-header-amount" style="color:${amtColor}">
-            ${isLiability ? '-' : ''}¥${formatNumber(catData.totalAmount)}
-          </span>
-        </div>
-      `;
-      Object.entries(catData.groups)
-        .sort((a, b) => b[1].totalAmount - a[1].totalAmount)
-        .forEach(([type, g]) => {
-          const avgRate = g.totalPrincipal > 0 ? g.totalExpectedReturn / g.totalPrincipal * 100 : 0;
-          html += `
-            <div class="asset-item asset-item-sub">
-              <div class="asset-info">
-                <h4>${escapeHtml(type)}${avgRate > 0.001
-                  ? `<small class="inline-rate">年化${avgRate.toFixed(2)}%</small>`
-                  : ''}</h4>
+        html += `
+          <div class="category-header">
+            <span class="category-header-name" style="color:${color}">${escapeHtml(cat)}</span>
+            <span class="category-header-amount" style="color:${amtColor}">
+              ${isLiability ? '-' : ''}¥${formatNumber(catData.totalAmount)}
+            </span>
+          </div>
+        `;
+        Object.entries(catData.groups)
+          .sort((a, b) => b[1].totalAmount - a[1].totalAmount)
+          .forEach(([type, g]) => {
+            const avgRate = g.totalPrincipal > 0 ? g.totalExpectedReturn / g.totalPrincipal * 100 : 0;
+            html += `
+              <div class="asset-item asset-item-sub">
+                <div class="asset-info">
+                  <h4>${escapeHtml(type)}${avgRate > 0.001
+                    ? `<small class="inline-rate">年化${avgRate.toFixed(2)}%</small>`
+                    : ''}</h4>
+                </div>
+                <div class="asset-amount" style="color:${amtColor}">
+                  ${isLiability ? '-' : ''}¥${formatNumber(g.totalAmount)}
+                </div>
               </div>
-              <div class="asset-amount" style="color:${amtColor}">
-                ${isLiability ? '-' : ''}¥${formatNumber(g.totalAmount)}
-              </div>
-            </div>
-          `;
-        });
-    });
+            `;
+          });
+      });
     recentList.innerHTML = html;
   } catch (err) {
     console.error('加载概览失败:', err);
@@ -380,7 +442,8 @@ function renderCategoryPieChart(assets) {
     categoryStats[cat] = (categoryStats[cat] || 0) + Math.abs(asset.amount);
   });
 
-  const categories = Object.keys(categoryStats);
+  const categories = Object.keys(categoryStats)
+    .sort((a, b) => getCategoryOrder(a) - getCategoryOrder(b));
   const total = Object.values(categoryStats).reduce((a, b) => a + b, 0);
 
   if (total === 0) {
@@ -398,7 +461,7 @@ function renderCategoryPieChart(assets) {
     const value      = categoryStats[category];
     const percentage = value / total;
     const angle      = percentage * 360;
-    const color      = CATEGORY_COLORS[category] || '#6366f1';
+    const color      = getCategoryColor(category);
     const startAngle = currentAngle;
     const endAngle   = currentAngle + angle;
     const largeArc   = angle > 180 ? 1 : 0;
@@ -419,11 +482,11 @@ function renderCategoryPieChart(assets) {
   legend.innerHTML = categories.map(category => {
     const value      = categoryStats[category];
     const percentage = ((value / total) * 100).toFixed(1);
-    const color      = CATEGORY_COLORS[category] || '#6366f1';
+    const color      = getCategoryColor(category);
     return `
       <div class="legend-item">
         <span class="legend-dot" style="background:${color}"></span>
-        <span class="legend-text">${category}</span>
+        <span class="legend-text">${escapeHtml(category)}</span>
         <span class="legend-value">${percentage}%</span>
       </div>
     `;
@@ -444,20 +507,20 @@ async function loadAssets() {
     }
 
     const sorted = [...assets].sort((a, b) => {
-      const diff = CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
+      const diff = getCategoryOrder(a.category) - getCategoryOrder(b.category);
       return diff !== 0 ? diff : b.amount - a.amount;
     });
 
     assetsList.innerHTML = sorted.map(asset => {
-      const color       = CATEGORY_COLORS[asset.category] || '#6366f1';
-      const isLiability = asset.category === '负债';
+      const color       = getCategoryColor(asset.category);
+      const isLiability = isLiabilityCategory(asset.category);
       const amtColor    = isLiability ? 'var(--danger)' : 'var(--success)';
       const returnRate  = asset.expectedReturn || 0;
       return `
         <div class="asset-item">
           <div class="asset-info">
             <h4>${escapeHtml(asset.name)}</h4>
-            <span style="color:${color}">${asset.category} · ${asset.type}${returnRate > 0
+            <span style="color:${color}">${escapeHtml(asset.category)} · ${escapeHtml(asset.type)}${returnRate > 0
               ? ` · 年化${returnRate}%` : ''}${asset.description
               ? ' · ' + escapeHtml(asset.description) : ''}</span>
           </div>
@@ -491,15 +554,15 @@ function openAssetModal(asset = null) {
     document.getElementById('asset-expected-return').value = asset.expectedReturn || 0;
     document.getElementById('asset-description').value     = asset.description || '';
     categorySelect.value = asset.category || '';
-    populateSubtypes(typeSelect, asset.category);
-    typeSelect.value = asset.type || '';
+    renderAssetCategoryOptions(asset.category || '');
+    populateSubtypes(typeSelect, asset.category, asset.type || '');
   } else {
     title.textContent = '添加资产';
     document.getElementById('asset-form').reset();
     document.getElementById('asset-id').value              = '';
     document.getElementById('asset-principal').value       = '';
     document.getElementById('asset-expected-return').value = '';
-    categorySelect.value = '';
+    renderAssetCategoryOptions('');
     typeSelect.innerHTML = '<option value="">请先选择类型</option>';
   }
   modal.classList.remove('hidden');
@@ -689,6 +752,164 @@ async function deleteGoal(id) {
     const res = await authFetch(`${API_BASE}/goals/${id}`, { method: 'DELETE' });
     if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
     loadGoals();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// ── 类别管理 ─────────────────────────────────────────
+async function loadCategoriesView() {
+  await loadCategories();
+  renderCategoriesList();
+}
+
+function renderCategoriesList() {
+  const list = document.getElementById('categories-list');
+  if (!assetCategories.length) {
+    list.innerHTML = '<div class="empty-message">暂无类别，点击"添加类别"开始配置</div>';
+    return;
+  }
+
+  list.innerHTML = assetCategories.map(cat => {
+    const color = safeColor(cat.color) || getCategoryColor(cat.name);
+    const subs  = Array.isArray(cat.subs) ? cat.subs : [];
+    return `
+      <div class="category-card">
+        <div class="category-card-header">
+          <div class="category-card-title">
+            <span class="category-dot" style="background:${escapeAttr(color)}"></span>
+            <span class="category-name">${escapeHtml(cat.name)}</span>
+            ${cat.isLiability ? '<span class="category-badge">负债</span>' : ''}
+          </div>
+          <div class="asset-actions">
+            <button class="edit-btn"   data-action="edit-category"   data-id="${cat.id}">编辑</button>
+            <button class="delete-btn" data-action="delete-category" data-id="${cat.id}">删除</button>
+          </div>
+        </div>
+        <div class="subtype-chips">
+          ${subs.length
+            ? subs.map(s => `<span class="subtype-chip">${escapeHtml(s)}</span>`).join('')
+            : '<span class="subtype-empty">暂无子类</span>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function handleCategoryListClick(e) {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const cat = assetCategories.find(c => String(c.id) === btn.dataset.id);
+  if (!cat) return;
+
+  if (btn.dataset.action === 'edit-category') openCategoryModal(cat);
+  if (btn.dataset.action === 'delete-category') await deleteCategory(cat);
+}
+
+function openCategoryModal(cat = null) {
+  const title     = document.getElementById('category-modal-title');
+  const container = document.getElementById('subtype-inputs');
+
+  document.getElementById('category-form').reset();
+  container.innerHTML = '';
+
+  if (cat) {
+    title.textContent = '编辑类别';
+    document.getElementById('category-id').value    = cat.id;
+    document.getElementById('category-name').value  = cat.name;
+    document.getElementById('category-color').value = cat.color || '#6366f1';
+    document.getElementById('category-liability').checked = !!cat.isLiability;
+    (cat.subs || []).forEach(sub => appendSubtypeRow(sub));
+  } else {
+    title.textContent = '添加类别';
+    document.getElementById('category-id').value    = '';
+    document.getElementById('category-color').value = '#6366f1';
+    document.getElementById('category-liability').checked = false;
+  }
+
+  if (!container.children.length) appendSubtypeRow('');
+  document.getElementById('category-modal').classList.remove('hidden');
+  document.getElementById('category-name').focus();
+}
+
+function closeCategoryModal() {
+  document.getElementById('category-modal').classList.add('hidden');
+}
+
+function appendSubtypeRow(value = '') {
+  const container = document.getElementById('subtype-inputs');
+  const row = document.createElement('div');
+  row.className = 'subtype-row';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'subtype-input';
+  input.placeholder = '子类名称';
+  input.value = value;
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      appendSubtypeRow('').querySelector('input').focus();
+    }
+  });
+
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'subtype-remove';
+  remove.title = '删除该子类';
+  remove.textContent = '×';
+  remove.addEventListener('click', () => row.remove());
+
+  row.append(input, remove);
+  container.appendChild(row);
+  return row;
+}
+
+async function saveCategory(e) {
+  e.preventDefault();
+  const id   = document.getElementById('category-id').value;
+  const name = document.getElementById('category-name').value.trim();
+  if (!name) return alert('类别名称不能为空');
+
+  const subs = [...document.querySelectorAll('#subtype-inputs .subtype-input')]
+    .map(input => input.value.trim())
+    .filter(Boolean);
+  if (!subs.length) return alert('请至少添加一个资产子类');
+
+  const body = {
+    name,
+    color:       document.getElementById('category-color').value,
+    isLiability: document.getElementById('category-liability').checked,
+    subs
+  };
+
+  try {
+    const res = await authFetch(
+      id ? `${API_BASE}/categories/${id}` : `${API_BASE}/categories`,
+      { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) }
+    );
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+
+    closeCategoryModal();
+    await loadCategories();
+    renderCategoriesList();
+    loadDashboard();
+    loadAssets();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deleteCategory(cat) {
+  if (!confirm(`确定要删除类别「${cat.name}」吗？`)) return;
+  try {
+    const res = await authFetch(`${API_BASE}/categories/${cat.id}`, { method: 'DELETE' });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+
+    await loadCategories();
+    renderCategoriesList();
+    loadDashboard();
+    loadAssets();
   } catch (err) {
     alert(err.message);
   }

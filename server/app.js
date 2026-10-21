@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const assetsRoutes = require('./routes/assets');
+const categoriesRoutes = require('./routes/categories');
 const { getDB } = require('./storage');
 const { authMiddleware } = require('./middleware/auth');
 
@@ -15,6 +16,7 @@ function createApp() {
   // API 路由
   app.use('/api', authRoutes);
   app.use('/api/assets', assetsRoutes);
+  app.use('/api/categories', categoriesRoutes);
 
   // 统计路由（兼容原有 /api/statistics 路径）
   app.get('/api/statistics', authMiddleware, async (req, res) => {

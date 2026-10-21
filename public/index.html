@@ -48,6 +48,7 @@
         <button class="nav-btn active" data-view="dashboard">总览</button>
         <button class="nav-btn" data-view="assets">资产管理</button>
         <button class="nav-btn" data-view="goals">目标管理</button>
+        <button class="nav-btn" data-view="categories">类别管理</button>
       </nav>
 
       <!-- 资产概览 -->
@@ -96,6 +97,16 @@
         <div id="goals-list"></div>
       </div>
 
+      <!-- 类别管理 -->
+      <div id="categories-view" class="view hidden">
+        <div class="assets-header">
+          <h2>资产类别</h2>
+          <button id="add-category-btn" class="btn-primary">添加类别</button>
+        </div>
+        <p class="view-hint">自定义资产大类与子类，修改后立即应用于资产录入、分类统计与图表。</p>
+        <div id="categories-list"></div>
+      </div>
+
       <!-- 添加/编辑资产弹窗 -->
       <div id="asset-modal" class="modal hidden">
         <div class="modal-content">
@@ -110,11 +121,6 @@
               <label>资产类型</label>
               <select id="asset-category" required>
                 <option value="">请选择类型</option>
-                <option value="现金">现金</option>
-                <option value="固收">固收</option>
-                <option value="权益">权益</option>
-                <option value="另类">另类</option>
-                <option value="负债">负债</option>
               </select>
             </div>
             <div class="form-group">
@@ -167,6 +173,41 @@
             </div>
             <div class="form-actions">
               <button type="button" id="goal-cancel-btn">取消</button>
+              <button type="submit" class="btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- 添加/编辑类别弹窗 -->
+      <div id="category-modal" class="modal hidden">
+        <div class="modal-content">
+          <h3 id="category-modal-title">添加类别</h3>
+          <form id="category-form">
+            <input type="hidden" id="category-id">
+            <div class="form-group">
+              <label>类别名称</label>
+              <input type="text" id="category-name" placeholder="如：现金、固收、权益" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>颜色</label>
+                <input type="color" id="category-color" value="#6366f1">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="category-liability">
+                  <span>计入负债</span>
+                </label>
+                <small class="form-hint">勾选后该类别金额从净资产中扣除</small>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>资产子类</label>
+              <div id="subtype-inputs" class="subtype-inputs"></div>
+              <button type="button" id="add-subtype-btn" class="btn-ghost">+ 添加子类</button>
+            </div>
+            <div class="form-actions">
+              <button type="button" id="category-cancel-btn">取消</button>
               <button type="submit" class="btn-primary">保存</button>
             </div>
           </form>

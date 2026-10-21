@@ -766,14 +766,16 @@ header h1 {
 }
 
 #cancel-btn,
-#goal-cancel-btn {
+#goal-cancel-btn,
+#category-cancel-btn {
   background: var(--bg-hover);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
 }
 
 #cancel-btn:hover,
-#goal-cancel-btn:hover {
+#goal-cancel-btn:hover,
+#category-cancel-btn:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
@@ -891,6 +893,15 @@ header h1 {
     gap: 12px;
   }
 
+  .category-card-header {
+    flex-wrap: wrap;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
   .btn-primary {
     justify-content: center;
   }
@@ -929,6 +940,16 @@ header h1 {
 }
 
 @media (max-width: 480px) {
+  .main-nav {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .nav-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
   .asset-actions button {
     padding: 8px 12px;
   }
@@ -964,6 +985,198 @@ header h1 {
   .goal-progress-section {
     width: 100%;
   }
+}
+
+/* ============ 类别管理 ============ */
+.view-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: -8px 0 16px;
+}
+
+#categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 20px;
+  transition: border-color 0.2s ease;
+}
+
+.category-card:hover {
+  border-color: var(--accent);
+}
+
+.category-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.category-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.category-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.category-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: 6px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.subtype-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subtype-chip {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.subtype-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 类别弹窗 */
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-group input[type="color"] {
+  height: 44px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.form-hint {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.subtype-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.subtype-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtype-row .subtype-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.subtype-row .subtype-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.subtype-remove {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subtype-remove:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-ghost {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
 }
 
 /* ============ 滚动条 ============ */
