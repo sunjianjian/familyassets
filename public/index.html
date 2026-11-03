@@ -53,29 +53,49 @@
 
       <!-- 资产概览 -->
       <div id="dashboard-view" class="view">
-        <!-- 融合卡片：净资产 + 资产配置饼图（左右布局） -->
+        <!-- 总览卡片：净资产 + 资产/目标视图切换 -->
         <div class="overview-card">
-          <div class="overview-left">
+          <div class="overview-header">
             <div class="overview-label-row">
               <span class="overview-title">净资产</span>
               <p id="total-assets">¥0</p>
               <span id="net-annual-return" class="header-return">年收益 ¥0</span>
             </div>
+            <div class="overview-toggle" role="tablist" aria-label="总览视图切换">
+              <button type="button" class="overview-toggle-btn active" data-overview="assets"
+                      role="tab" aria-selected="true" title="资产视图" aria-label="资产视图">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M8 2.5V8l4.8 2.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button type="button" class="overview-toggle-btn" data-overview="goals"
+                      role="tab" aria-selected="false" title="目标视图" aria-label="目标视图">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div class="overview-right">
-            <div class="pie-chart-container">
+
+          <!-- 资产视图：左饼图，右资产列表 -->
+          <div id="overview-assets" class="overview-panel overview-assets">
+            <div class="overview-pie">
               <svg id="category-pie" class="pie-chart" viewBox="0 0 100 100"></svg>
               <div id="category-legend" class="chart-legend"></div>
             </div>
-            <div class="goal-progress-section hidden" id="goal-progress-section">
-              <div id="goal-progress-list"></div>
+            <div class="overview-asset-list">
+              <h3>分类资产</h3>
+              <div id="recent-list"></div>
             </div>
           </div>
-        </div>
 
-        <div class="recent-assets">
-          <h3>分类资产</h3>
-          <div id="recent-list"></div>
+          <!-- 目标视图 -->
+          <div id="overview-goals" class="overview-panel overview-goals hidden">
+            <h3>目标达成</h3>
+            <div id="goal-progress-list"></div>
+          </div>
         </div>
       </div>
 

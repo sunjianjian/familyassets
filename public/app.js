@@ -138,6 +138,11 @@ function initEventListeners() {
     });
   });
 
+  // 总览视图切换（资产 / 目标）
+  document.querySelectorAll('.overview-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => setOverviewTab(btn.dataset.overview));
+  });
+
   // 资产类型联动
   document.getElementById('asset-category').addEventListener('change', (e) => {
     populateSubtypes(document.getElementById('asset-type'), e.target.value);
@@ -399,16 +404,25 @@ async function loadDashboard() {
   }
 }
 
+// ── 总览视图切换 ─────────────────────────────────────
+function setOverviewTab(tab) {
+  document.querySelectorAll('.overview-toggle-btn').forEach(btn => {
+    const active = btn.dataset.overview === tab;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+  document.getElementById('overview-assets').classList.toggle('hidden', tab !== 'assets');
+  document.getElementById('overview-goals').classList.toggle('hidden', tab !== 'goals');
+}
+
 // ── 目标达成率 ───────────────────────────────────────
 function renderGoalProgress(goals, netWorth) {
-  const section = document.getElementById('goal-progress-section');
-  const listEl  = document.getElementById('goal-progress-list');
+  const listEl = document.getElementById('goal-progress-list');
 
   if (!goals || goals.length === 0) {
-    section.classList.add('hidden');
+    listEl.innerHTML = '<div class="empty-message">暂无目标，可在「目标管理」中添加</div>';
     return;
   }
-  section.classList.remove('hidden');
 
   let remaining = netWorth;
   listEl.innerHTML = goals.map(goal => {

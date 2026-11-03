@@ -76,18 +76,18 @@ const VIEWPORTS = [
   { name: 'desktop-1280', width: 1280, height: 800 },
 ];
 
-// ── 重叠检测：检查 .pie-chart-container 与 .recent-assets 是否有交集 ──────
+// ── 重叠检测：检查 .overview-pie 与右侧资产列表是否有交集 ──────
 
 const OVERLAP_CHECKS = [
   {
     label:  '饼图 vs 分类资产列表',
-    selA:   '.pie-chart-container',
-    selB:   '.recent-assets',
+    selA:   '.overview-pie',
+    selB:   '.overview-asset-list',
   },
   {
     label:  '饼图 vs 目标进度区',
-    selA:   '.pie-chart-container',
-    selB:   '.goal-progress-section:not(.hidden)',
+    selA:   '.overview-pie',
+    selB:   '#overview-goals:not(.hidden)',
   },
 ];
 
