@@ -1012,6 +1012,24 @@ header h1 {
   border-color: var(--accent);
 }
 
+.category-card-title .drag-handle {
+  width: 22px;
+  min-width: 22px;
+  align-self: center;
+  margin-right: 0;
+  font-size: 16px;
+}
+
+.category-card.dragging {
+  opacity: 0.35;
+  background: var(--bg-hover);
+}
+
+.category-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
 .category-card-header {
   display: flex;
   justify-content: space-between;

@@ -617,58 +617,64 @@ async function loadGoals() {
         </div>
       </div>
     `).join('');
-    initGoalDnD(list);
+    initDragSort(list, '.goal-item', saveGoalOrder);
   } catch (err) {
     console.error('加载目标失败:', err);
   }
 }
 
-function initGoalDnD(list) {
+async function saveGoalOrder(ids) {
+  await authFetch(`${API_BASE}/goals/reorder`, {
+    method: 'POST',
+    body: JSON.stringify({ ids: ids.map(Number) })
+  });
+}
+
+// 通用拖拽排序：桌面端 HTML5 DnD + 移动端 Touch DnD
+function initDragSort(container, itemSelector, onOrderChange) {
   let dragSrc = null;
 
-  async function saveOrder() {
-    const newOrder = [...list.querySelectorAll('.goal-item')].map(el => parseInt(el.dataset.id));
-    try {
-      await authFetch(`${API_BASE}/goals/reorder`, {
-        method: 'POST',
-        body: JSON.stringify({ ids: newOrder })
-      });
-    } catch (err) {
-      console.error('保存排序失败:', err);
-    }
-  }
+  const getItems  = () => [...container.querySelectorAll(itemSelector)];
+  const getTarget = el => el?.closest(itemSelector);
 
   function clearDragState() {
-    list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('dragging', 'drag-over'));
+    getItems().forEach(i => i.classList.remove('dragging', 'drag-over'));
     dragSrc = null;
   }
 
   function insertItem(src, target) {
     if (!src || !target || src === target) return;
-    const items  = [...list.querySelectorAll('.goal-item')];
+    const items  = getItems();
     const srcIdx = items.indexOf(src);
     const dstIdx = items.indexOf(target);
     if (srcIdx < dstIdx) target.after(src);
     else target.before(src);
   }
 
-  list.querySelectorAll('.goal-item').forEach(item => {
+  async function commit() {
+    clearDragState();
+    try {
+      await onOrderChange(getItems().map(el => el.dataset.id));
+    } catch (err) {
+      console.error('保存排序失败:', err);
+    }
+  }
+
+  getItems().forEach(item => {
     const handle = item.querySelector('.drag-handle');
 
     // 桌面端 DnD
     item.setAttribute('draggable', 'true');
-    handle.addEventListener('mousedown', () => item.setAttribute('draggable', 'true'));
-
     item.addEventListener('dragstart', e => {
       dragSrc = item;
       item.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     });
-    item.addEventListener('dragend',  () => clearDragState());
+    item.addEventListener('dragend', clearDragState);
     item.addEventListener('dragover', e => {
       e.preventDefault();
       if (item !== dragSrc) {
-        list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
+        getItems().forEach(i => i.classList.remove('drag-over'));
         item.classList.add('drag-over');
       }
     });
@@ -677,9 +683,10 @@ function initGoalDnD(list) {
       if (!dragSrc || dragSrc === item) return;
       item.classList.remove('drag-over');
       insertItem(dragSrc, item);
-      clearDragState();
-      await saveOrder();
+      await commit();
     });
+
+    if (!handle) return;
 
     // 移动端 Touch DnD
     handle.addEventListener('contextmenu', e => e.preventDefault());
@@ -698,8 +705,8 @@ function initGoalDnD(list) {
       dragSrc.style.pointerEvents = 'none';
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       dragSrc.style.pointerEvents = '';
-      const target = el?.closest('.goal-item');
-      list.querySelectorAll('.goal-item').forEach(i => i.classList.remove('drag-over'));
+      const target = getTarget(el);
+      getItems().forEach(i => i.classList.remove('drag-over'));
       if (target && target !== dragSrc) target.classList.add('drag-over');
     }, { passive: false });
 
@@ -710,12 +717,13 @@ function initGoalDnD(list) {
       dragSrc.style.pointerEvents = 'none';
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       dragSrc.style.pointerEvents = '';
-      const target = el?.closest('.goal-item');
+      const target = getTarget(el);
       if (target && target !== dragSrc) {
         insertItem(dragSrc, target);
-        await saveOrder();
+        await commit();
+      } else {
+        clearDragState();
       }
-      clearDragState();
     }, { passive: false });
   });
 }
@@ -774,9 +782,10 @@ function renderCategoriesList() {
     const color = safeColor(cat.color) || getCategoryColor(cat.name);
     const subs  = Array.isArray(cat.subs) ? cat.subs : [];
     return `
-      <div class="category-card">
+      <div class="category-card" draggable="true" data-id="${cat.id}">
         <div class="category-card-header">
           <div class="category-card-title">
+            <div class="drag-handle" title="拖拽排序">⠿</div>
             <span class="category-dot" style="background:${escapeAttr(color)}"></span>
             <span class="category-name">${escapeHtml(cat.name)}</span>
             ${cat.isLiability ? '<span class="category-badge">负债</span>' : ''}
@@ -794,6 +803,31 @@ function renderCategoriesList() {
       </div>
     `;
   }).join('');
+
+  initDragSort(list, '.category-card', saveCategoryOrder);
+}
+
+// 保存类别排序，成功后同步首页与资产列表的展示顺序
+async function saveCategoryOrder(ids) {
+  try {
+    const res = await authFetch(`${API_BASE}/categories/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ ids: ids.map(Number) })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error);
+    }
+    const ordered = await res.json();
+    if (Array.isArray(ordered) && ordered.length) assetCategories = ordered;
+
+    loadDashboard();
+    loadAssets();
+  } catch (err) {
+    // 保存失败时恢复为服务端当前顺序
+    renderCategoriesList();
+    throw err;
+  }
 }
 
 async function handleCategoryListClick(e) {

@@ -93,6 +93,27 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+// 类别排序（需放在 /:id 之前）
+router.post('/reorder', authMiddleware, async (req, res) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids)) return res.status(400).json({ error: '排序参数不正确' });
+
+    const db = await getDB();
+    const categories = await getUserCategories(db, req.userId);
+
+    const idIndex = new Map(ids.map((id, index) => [parseInt(id), index]));
+    categories.forEach((c, index) => {
+      c.sort = idIndex.has(c.id) ? idIndex.get(c.id) : ids.length + index;
+    });
+
+    await saveDB(db);
+    res.json(categories.sort((a, b) => a.sort - b.sort));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 更新类别
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
