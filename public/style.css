@@ -562,9 +562,12 @@ header h1 {
   opacity: 0.8;
 }
 
-.asset-item-sub .asset-amount {
-  font-size: 15px;
-  font-weight: 600;
+.asset-item-sub .asset-amount,
+.asset-amount-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  opacity: 0.9;
 }
 
 .category-header {

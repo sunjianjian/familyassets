@@ -391,7 +391,7 @@ async function loadDashboard() {
                     ? `<small class="inline-rate">年化${avgRate.toFixed(2)}%</small>`
                     : ''}</h4>
                 </div>
-                <div class="asset-amount" style="color:${amtColor}">
+                <div class="asset-amount asset-amount-sub">
                   ${isLiability ? '-' : ''}¥${formatNumber(g.totalAmount)}
                 </div>
               </div>
